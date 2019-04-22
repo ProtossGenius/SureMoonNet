@@ -1,15 +1,22 @@
 package main
 
 import (
-	"basis/smn_directory"
+	"basis/smn_file"
 	"basis/smn_stream"
 	"fmt"
+	"io"
 	"os"
 	"strings"
+	"time"
 )
 
 var filters = []string{".go", ".java"}
 
+func checkerr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
 func getFileLines(fname string) int {
 	fr := smn_stream.FileReadPipeline{FileName: fname}
 	fr.Capture()
@@ -22,7 +29,7 @@ func getFileLines(fname string) int {
 }
 func main() {
 	count := 0
-	smn_directory.DeepTraversalDir("./", func(path string, info os.FileInfo) bool {
+	smn_file.DeepTraversalDir("./", func(path string, info os.FileInfo) bool {
 		if info.IsDir() {
 			return true
 		}
@@ -33,5 +40,9 @@ func main() {
 		}
 		return true
 	})
-	fmt.Println(count)
+	f, err := os.OpenFile("./code_line_statistics.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	checkerr(err)
+	str := fmt.Sprintf("%s --code line statistics-- %d\n", time.Now().Format("2006-01-02 03:04:05.012 PM"), count)
+	fmt.Println(str)
+	io.WriteString(f, str)
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"basis/smn_file"
 	"github.com/json-iterator/go"
-	"io/ioutil"
 	"os"
 	"text/template"
 )
@@ -13,43 +13,22 @@ func checkerr(err error) {
 	}
 }
 
-/**
- * 判断文件是否存在  存在返回 true 不存在返回false
- */
-func IsFileExist(fileName string) bool {
-	var exist = true
-	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		exist = false
-	}
-	return exist
+func createNewFile(fileName string) *os.File {
+	f, e := smn_file.CreateNewFile(fileName)
+	checkerr(e)
+	return f
 }
 
-func RemoveFileIfExist(fileName string) error {
-	if IsFileExist(fileName) {
-		return os.Remove(fileName)
-	}
-	return nil
-}
-
-func NewCreateFile(fileName string) *os.File {
-	RemoveFileIfExist(fileName)
-	res, err := os.Create(fileName)
+func fileReadAll(path string) []byte {
+	bytes, err := smn_file.FileReadAll(path)
 	checkerr(err)
-	return res
+	return bytes
 }
 
 func Json2Map(bts []byte) map[string]interface{} {
 	res := make(map[string]interface{})
 	jsoniter.Unmarshal(bts, &res)
 	return res
-}
-
-func fileReadAll(path string) []byte {
-	cfg, err := os.Open(path)
-	checkerr(err)
-	bytes, err := ioutil.ReadAll(cfg)
-	checkerr(err)
-	return bytes
 }
 
 type MyWriter struct {
@@ -67,9 +46,11 @@ func (this *MyWriter) Write(p []byte) (n int, err error) {
 func main() {
 	bytes := fileReadAll("./datas/testinp.json")
 	inp := fileReadAll("./datas/to_rendering.tmp")
-	out := NewCreateFile("./datas/output.txt")
+	out := createNewFile("./datas/output.txt")
 	t := template.New("zzzz")
 	t, _ = t.Parse(string(inp))
-	err := t.Execute(&MyWriter{file: out, IsWriteToConsole: true}, Json2Map(bytes))
+	m := Json2Map(bytes)
+	m["_"] = "{{"
+	err := t.Execute(&MyWriter{file: out, IsWriteToConsole: true}, m)
 	checkerr(err)
 }
