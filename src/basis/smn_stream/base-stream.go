@@ -20,7 +20,7 @@ type ReadPipelineItf interface {
 type FileReadPipeline struct {
 	reader    *bufio.Reader
 	FileName  string
-	ReadEnd   bool
+	readEnd   bool
 	BuffSize  int //the size when read from reader.
 	CacheSize int //the size save in chan.
 	readChan  chan byte
@@ -32,14 +32,14 @@ func (this *FileReadPipeline) Capture() error {
 	if this.reader != nil {
 		return errors.New(ErrRepeatExecution)
 	}
-	this.ReadEnd = false
+	this.readEnd = false
 	f, err := os.Open(this.FileName)
 	if err != nil {
 		return err
 	}
 	this.reader = bufio.NewReader(f)
 	if this.TimeOut <= 0 {
-		this.TimeOut = 1 * time.Microsecond
+		this.TimeOut = 5 * time.Microsecond
 	}
 	if this.BuffSize <= 0 {
 		this.BuffSize = 1024
@@ -68,13 +68,13 @@ func (this *FileReadPipeline) Capture() error {
 		}
 		f.Close()
 		this.reader = nil
-		this.ReadEnd = true
+		this.readEnd = true
 	}()
 	return nil
 }
 
 func (this *FileReadPipeline) RemainingSize() int64 {
-	if this.ReadEnd && len(this.readChan) == 0 {
+	if this.readEnd && len(this.readChan) == 0 {
 		return 0
 	}
 	return -1
@@ -84,7 +84,7 @@ func (this *FileReadPipeline) read() (b byte, err error) {
 	if len(this.readChan) != 0 {
 		return <-this.readChan, nil
 	}
-	if this.ReadEnd {
+	if this.readEnd {
 		return b, errors.New("EOF")
 	}
 	time.Sleep(this.TimeOut)

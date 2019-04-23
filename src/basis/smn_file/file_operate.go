@@ -40,5 +40,7 @@ func FileReadAll(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(cfg)
+	b, e := ioutil.ReadAll(cfg)
+	cfg.Close()
+	return b, e
 }

@@ -1,2 +1,7 @@
 hello world
-{{.a}} {{.b}} {{.C.D}} {{._}}
+{{.a}} {{.b}} {{.C.D}} {{._}} {{_}}
+{{iset "isFirst" 1}}
+{{range $mmp := .hello}}{{if inz "isFirst"}}{{iset "isFirst" 0}}{{else}}, {{end}}{{range $k, $v := $mmp}}{{$k}}---->{{$v}}{{end}}{{end}}{{iset "hello" 10}}
+{{range $k := .world}}    {{iadd "hello" 1}}------->{{$k}}
+{{end}}{{test "args"}}
+{{test2}}
