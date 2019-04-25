@@ -3,7 +3,9 @@ package smn_stream
 import (
 	"bufio"
 	"errors"
+	"io"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -17,10 +19,11 @@ type ReadPipelineItf interface {
 	ByteBreakRead(condition ...byte) ([]byte, error)       //when get byte, end read
 }
 
-type FileReadPipeline struct {
-	reader    *bufio.Reader
-	FileName  string
+type ReadPipeline struct {
+	reader    io.Reader
+	closer    io.Closer
 	readEnd   bool
+	onceLock  sync.Mutex
 	BuffSize  int //the size when read from reader.
 	CacheSize int //the size save in chan.
 	readChan  chan byte
@@ -28,16 +31,23 @@ type FileReadPipeline struct {
 	TimeOut   time.Duration
 }
 
-func (this *FileReadPipeline) Capture() error {
-	if this.reader != nil {
-		return errors.New(ErrRepeatExecution)
-	}
-	this.readEnd = false
-	f, err := os.Open(this.FileName)
+func NewReadPipeline(reader io.Reader, closer io.Closer) *ReadPipeline {
+	return &ReadPipeline{reader: reader, closer: closer}
+}
+
+func NewFileReadPipeline(fname string) (*ReadPipeline, error) {
+	f, err := os.Open(fname)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	this.reader = bufio.NewReader(f)
+	reader := bufio.NewReader(f)
+	return NewReadPipeline(reader, f), nil
+}
+
+func (this *ReadPipeline) Capture() error {
+	this.onceLock.Lock()
+	defer this.onceLock.Unlock()
+	this.readEnd = false
 	if this.TimeOut <= 0 {
 		this.TimeOut = 5 * time.Microsecond
 	}
@@ -66,21 +76,21 @@ func (this *FileReadPipeline) Capture() error {
 				this.readChan <- readBuff[i]
 			}
 		}
-		f.Close()
+		this.closer.Close()
 		this.reader = nil
 		this.readEnd = true
 	}()
 	return nil
 }
 
-func (this *FileReadPipeline) RemainingSize() int64 {
+func (this *ReadPipeline) RemainingSize() int64 {
 	if this.readEnd && len(this.readChan) == 0 {
 		return 0
 	}
 	return -1
 }
 
-func (this *FileReadPipeline) read() (b byte, err error) {
+func (this *ReadPipeline) read() (b byte, err error) {
 	if len(this.readChan) != 0 {
 		return <-this.readChan, nil
 	}
@@ -93,7 +103,7 @@ func (this *FileReadPipeline) read() (b byte, err error) {
 	}
 	return <-this.readChan, nil
 }
-func (this *FileReadPipeline) Read(buff []byte) (size int, err error) {
+func (this *ReadPipeline) Read(buff []byte) (size int, err error) {
 	if len(this.ErrChan) != 0 {
 		return 0, <-this.ErrChan
 	}
@@ -107,7 +117,7 @@ func (this *FileReadPipeline) Read(buff []byte) (size int, err error) {
 	return
 }
 
-func (this *FileReadPipeline) ConditionRead(condition ConditionFunc) (res []byte, err error) {
+func (this *ReadPipeline) ConditionRead(condition ConditionFunc) (res []byte, err error) {
 	res = make([]byte, 0, 33)
 	for {
 		b, e := this.read()
@@ -125,7 +135,7 @@ func (this *FileReadPipeline) ConditionRead(condition ConditionFunc) (res []byte
 	return res, condition(res)
 }
 
-func (this *FileReadPipeline) ByteBreakRead(condition ...byte) (res []byte, err error) {
+func (this *ReadPipeline) ByteBreakRead(condition ...byte) (res []byte, err error) {
 	res = make([]byte, 0, 33)
 	for this.RemainingSize() != 0 {
 		b, e := this.read()

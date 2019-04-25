@@ -72,7 +72,8 @@ func (this *CallFunc) Call(params ...interface{}) (otto.Value, error) {
 }
 
 func getFuncList(funcfile, funclist string) map[string]int {
-	fin := smn_stream.FileReadPipeline{FileName: funcfile}
+	fin, err := smn_stream.NewFileReadPipeline(funcfile)
+	checkerr(err)
 	checkerr(fin.Capture())
 	res := make(map[string]int)
 	if smn_file.IsFileExist(funclist) {
@@ -114,9 +115,12 @@ func loadFuncFile(funcfile string, funclist string) template.FuncMap {
 }
 
 type citf interface {
-	Iadd(k string, v int) int
-	Imult(k string, v int) int
-	Idiv(k string, v int) int
+	Iadd(k string, v int) string
+	Imult(k string, v int) string
+	Idiv(k string, v int) string
+	Isadd(k string, v int) int
+	Ismult(k string, v int) int
+	Isdiv(k string, v int) int
 	Iget(k string) int
 	Iset(k string, v int) string
 	Inz(k string) bool
@@ -127,7 +131,7 @@ type Counter struct {
 	lock sync.Mutex
 }
 
-func (this *Counter) Iadd(k string, v int) int {
+func (this *Counter) Isadd(k string, v int) int {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	val := this.vs[k]
@@ -136,7 +140,7 @@ func (this *Counter) Iadd(k string, v int) int {
 	return val
 }
 
-func (this *Counter) Imult(k string, v int) int {
+func (this *Counter) Ismult(k string, v int) int {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	val := this.vs[k]
@@ -145,13 +149,40 @@ func (this *Counter) Imult(k string, v int) int {
 	return v
 }
 
-func (this *Counter) Idiv(k string, v int) int {
+func (this *Counter) Isdiv(k string, v int) int {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	val := this.vs[k]
 	val /= v
 	this.vs[k] = val
 	return v
+}
+
+func (this *Counter) Iadd(k string, v int) string {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	val := this.vs[k]
+	val += v
+	this.vs[k] = val
+	return ""
+}
+
+func (this *Counter) Imult(k string, v int) string {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	val := this.vs[k]
+	val *= v
+	this.vs[k] = val
+	return ""
+}
+
+func (this *Counter) Idiv(k string, v int) string {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	val := this.vs[k]
+	val /= v
+	this.vs[k] = val
+	return ""
 }
 
 func (this *Counter) Iget(k string) int {
@@ -194,7 +225,8 @@ func main() {
 		t.Funcs(loadFuncFile(*funcfile, *funclist))
 	}
 	ictr := &Counter{vs: make(map[string]int)}
-	t.Funcs(template.FuncMap{"iadd": ictr.Iadd, "imult": ictr.Imult, "idiv": ictr.Idiv, "iget": ictr.Iget, "inz": ictr.Inz, "iset": ictr.Iset})
+	t.Funcs(template.FuncMap{"iadd": ictr.Iadd, "imult": ictr.Imult, "idiv": ictr.Idiv, "Iset": ictr.Iset, "itrue": ictr.Inz, "iset": ictr.Iset,
+		"isadd": ictr.Isadd, "ismult": ictr.Ismult, "isdiv": ictr.Isdiv})
 	t, _ = t.Parse(string(inp))
 	m := Json2Map(bytes)
 	err := t.Execute(&MyWriter{file: out, IsWriteToConsole: true}, m)

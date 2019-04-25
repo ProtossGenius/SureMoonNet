@@ -1,9 +1,9 @@
 package main
 
 import (
-	"basis/smn_file"
+	"bytes"
+	"encoding/binary"
 	"fmt"
-	"github.com/robertkrimen/otto"
 )
 
 func checkerr(err error) {
@@ -13,13 +13,13 @@ func checkerr(err error) {
 }
 
 func main() {
-	bytes, err := smn_file.FileReadAll("./datas/test.js")
-	checkerr(err)
-	vm := otto.New()
-	_, err = vm.Run(string(bytes))
-	checkerr(err)
-	data := "hello"
-	value, err := vm.Call("test", nil, data)
-	checkerr(err)
-	fmt.Println(value.String())
+	var i1 int64 = 511 // [00000000 00000000 ... 00000001 11111111] = [0 0 0 0 0 0 1 255]
+
+	s1 := make([]byte, 0)
+	buf := bytes.NewBuffer(s1)
+
+	// 数字转 []byte, 网络字节序为大端字节序
+	binary.Write(buf, binary.BigEndian, &i1)
+	s1 = buf.Bytes()
+	fmt.Println(s1)
 }

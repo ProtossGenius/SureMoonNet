@@ -18,8 +18,9 @@ func checkerr(err error) {
 	}
 }
 func getFileLines(fname string) int {
-	fr := smn_stream.FileReadPipeline{FileName: fname}
-	fr.Capture()
+	fr, err := smn_stream.NewFileReadPipeline(fname)
+	checkerr(err)
+	checkerr(fr.Capture())
 	count := 0
 	for fr.RemainingSize() != 0 {
 		fr.ByteBreakRead('\n')
