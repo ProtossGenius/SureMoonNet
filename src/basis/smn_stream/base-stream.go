@@ -1,8 +1,11 @@
 package smn_stream
 
 import (
+	"basis/smn_file"
+	"basis/smn_str_rendering"
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -36,6 +39,9 @@ func NewReadPipeline(reader io.Reader, closer io.Closer) *ReadPipeline {
 }
 
 func NewFileReadPipeline(fname string) (*ReadPipeline, error) {
+	if !smn_file.IsFileExist(fname) {
+		return nil, fmt.Errorf(smn_str_rendering.ERR_FILE_NOT_FOUND, fname)
+	}
 	f, err := os.Open(fname)
 	if err != nil {
 		return nil, err
