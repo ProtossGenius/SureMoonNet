@@ -1,5 +1,5 @@
 hello world
-{{.a}} {{.b}} {{.C.D}} {{._}} {{_}} {{__}} {{_n 5}}
+{{.a}} {{.b}} {{.C.D}} {{._}} {{_}} {{_n 5}}
 {{iset "isFirst" 1}}
 {{range $mmp := .hello}}{{if itrue "isFirst"}}{{iset "isFirst" 0}}{{else}}, {{end}}{{range $k, $v := $mmp}}{{$k}}---->{{$v}}{{end}}{{end}}{{iset "hello" 10}}
 {{range $k := .world}}    {{isadd "hello" 1}}------->{{$k}}

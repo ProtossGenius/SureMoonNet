@@ -24,7 +24,7 @@ func dataType(data string) DataType {
 			return DATA_TYPE_JSON
 		}
 	case '<':
-		if ec == '{' {
+		if ec == '>' {
 			return DATA_TYPE_XML
 		}
 	}
@@ -43,5 +43,14 @@ func GetDataMapFromStr(data string) (map[string]interface{}, error) {
 		return JsonToMap(data)
 	default:
 		return nil, errors.New(ERR_UNKNOW_TYPE)
+	}
+}
+
+func GetDataFromStr(data string, res interface{}) error {
+	switch dataType(data) {
+	case DATA_TYPE_JSON:
+		return jsoniter.Unmarshal([]byte(data), res)
+	default:
+		return errors.New(ERR_UNKNOW_TYPE)
 	}
 }

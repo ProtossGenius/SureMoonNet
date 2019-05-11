@@ -1,10 +1,7 @@
-
 function _() {
-    return "{"
-}
-function __() {
     return "{{"
 }
+
 function _n(n) {
     var res = ""
     for(var i = 0; i < n; i++){

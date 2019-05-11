@@ -5,7 +5,12 @@ import (
 	"os"
 )
 
-type FileDoFunc func(path string, info os.FileInfo) bool //true continue, false end traversal
+/*
+ *  path: file's path
+ *	info: file's info
+ *  return true continue, false end traversal
+ */
+type FileDoFunc func(path string, info os.FileInfo) bool
 
 func DeepTraversalDir(path string, fileDo FileDoFunc) (info os.FileInfo, err error) {
 	dirs, err := ioutil.ReadDir(path)

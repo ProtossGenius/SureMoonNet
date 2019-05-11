@@ -1,6 +1,9 @@
 package main
 
-import "basis/smn_str_rendering"
+import (
+	"basis/smn_str_rendering"
+	"flag"
+)
 
 func checkerr(err error) {
 	if err != nil {
@@ -9,8 +12,10 @@ func checkerr(err error) {
 }
 
 func main() {
-	render, err := smn_str_rendering.NewStrRender("hello", "./datas/to_rendering.tmp")
+	path := flag.String("basepath", "./datas", "basepath")
+	flag.Parse()
+	render, err := smn_str_rendering.NewStrRender("hello", *path+"/template.tmp")
 	checkerr(err)
-	checkerr(render.ReadJsFuncs("./datas/test.js", "./datas/func.list"))
-	checkerr(render.ParseData("./datas/testinp.json", "./datas/output.txt"))
+	checkerr(render.ReadJsFuncs(*path+"/func.js", *path+"/func.list"))
+	checkerr(render.ParseData(*path+"/data.json", *path+"/output.txt"))
 }
