@@ -17,5 +17,5 @@ func main() {
 	render, err := smn_str_rendering.NewStrRender("hello", *path+"/template.tmp")
 	checkerr(err)
 	checkerr(render.ReadJsFuncs(*path+"/func.js", *path+"/func.list"))
-	checkerr(render.ParseData(*path+"/data.json", *path+"/output.txt"))
+	checkerr(render.ParseFileData(*path+"/data.json", *path+"/output.txt"))
 }

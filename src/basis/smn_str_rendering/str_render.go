@@ -1,7 +1,7 @@
 package smn_str_rendering
 
 import (
-	"basis/smn_data_file"
+	"basis/smn_data"
 	"basis/smn_file"
 	"basis/smn_func"
 	"fmt"
@@ -57,26 +57,32 @@ func (this *StrRender) readTplFile(tplFile string) *StrRender {
 	return this
 }
 
-func (this *StrRender) ParseData(dataFile, outFile string) error {
+func (this *StrRender) ParseFileData(dataFile, outFile string) error {
+	bytes := this.readFile(dataFile)
+	if this.inError() {
+		return this.err
+	}
+	dataMap, err := smn_data.GetDataMapFromStr(string(bytes))
+	if iserr(err) {
+		return err
+	}
+	return this.ParseData(dataMap, outFile)
+}
+func (this *StrRender) ParseData(data interface{}, outFile string) error {
 	if !this.IsParsed {
+		if this.inError() {
+			return this.err
+		}
 		this.tpl, this.err = this.tpl.Parse(this.tplData)
 		if this.inError() {
 			return this.err
 		}
 	}
-	bytes := this.readFile(dataFile)
-	if this.inError() {
-		return this.err
-	}
-	dataMap, err := smn_data_file.GetDataMapFromStr(string(bytes))
-	if iserr(err) {
-		return err
-	}
 	out, err := smn_file.CreateNewFile(outFile)
 	if iserr(err) {
 		return err
 	}
-	return this.tpl.Execute(&CFWriter{file: out, IsWriteToConsole: this.IsWriteToConsole}, dataMap)
+	return this.tpl.Execute(&CFWriter{file: out, IsWriteToConsole: this.IsWriteToConsole}, data)
 }
 
 func (this *StrRender) getFuncList(jsContent, funcList string) (res map[string]int) {

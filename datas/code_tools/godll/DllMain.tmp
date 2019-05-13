@@ -1,0 +1,13 @@
+package main
+
+// it is product by smnet.suremoon.com
+
+import "C"
+import {{.factory_package}} "{{.factory_path}}"
+
+var val{{.interface_name}} = {{.factory_package}}.Product{{.interface_name}}()
+{{range .func_list}}
+func {{.func_def}}{
+    {{if .ret}}return {{end}}val{{$.interface_name}}.{{.func_call}}
+}
+{{end}}
