@@ -12,3 +12,7 @@ func {{.func_def}}{
     {{if .ret}}return {{end}}val{{$.interface_name}}.{{.func_call}}
 }
 {{end}}
+
+func main() {
+    // Need a main function to make CGO compile package as C shared library
+}

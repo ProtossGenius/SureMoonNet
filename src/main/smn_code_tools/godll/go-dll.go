@@ -8,6 +8,68 @@ import (
 	"strings"
 )
 
+// from DllMain.tmp
+const TPL_DLL_NAIN = `package main
+
+// it is product by smnet.suremoon.com
+
+import "C"
+import {{.factory_package}} "{{.factory_imp}}"
+import {{.interface_pkg}} "{{.interface_imp}}"
+import "sync"
+var objarr = make([]{{.interface_pkg}}.{{.interface_name}}, 0, 30)
+var idx int32 = 0
+var oimap = make(map[int32]byte)
+var oLock sync.Mutex
+
+//export New{{.interface_name}}
+func New{{.interface_name}}() int32{
+    oLock.Lock()
+    defer oLock.Unlock()
+    res := int32(0)
+    if len(oimap) != 0{
+        for id := range oimap {
+            res = id
+            delete(oimap, id)
+            break
+        }
+    }else {
+        res = idx
+        idx++
+    }
+    obj := pgt_factory.Product{{.interface_name}}()
+    if res == int32(len(objarr)){
+        objarr = append(objarr, obj)
+    }else {
+        objarr[res] = obj
+    }
+    return res
+}
+
+//export Delete{{.interface_name}}
+func Delete{{.interface_name}}(objid int32) bool {
+    if objid >= int32(len(objarr)) || objarr[objid] == nil{
+        return false
+    }
+    objarr[objid] = nil
+    delete(oimap, objid)
+    return true
+}
+
+
+{{range .func_list}}
+//export {{.func_name}}
+func {{.func_def}}{
+    {{if .ret}}return {{end}}objarr[o_b_j_i_n_d_e_x].{{.func_call}}
+}
+{{end}}
+
+func main() {
+    // Need a main function to make CGO compile package as C shared library
+}
+
+`
+
 func iserr(err error) bool {
 	return err != nil
 }
@@ -30,8 +92,10 @@ type FuncInfo struct {
 }
 
 type DLLMainInfo struct {
-	FactoryPath    string     `json:"factory_path"`
+	FactoryImp     string     `json:"factory_imp"`
 	FactoryPackage string     `json:"factory_package"`
+	InterfaceImp   string     `json:"interface_imp"`
+	InterfacePkg   string     `json:"interface_pkg"`
 	InterfaceName  string     `json:"interface_name"`
 	FuncList       []FuncInfo `json:"func_list"`
 }
@@ -57,10 +121,15 @@ func getLastNoZeroStr(strs []string) string {
 }
 
 func FuncDefToFuncCall(def string) FuncInfo {
-	info := FuncInfo{FuncDef: def, Ret: true}
+	info := FuncInfo{Ret: true}
+	firstLeftBrackets := strings.Index(def, "(")
+	if firstLeftBrackets == -1 || firstLeftBrackets == len(def)-1 {
+		panic("when deal def : " + def + " '(' pos error.")
+	}
+	info.FuncDef = def[:firstLeftBrackets+1] + "o_b_j_i_n_d_e_x int32, " + def[firstLeftBrackets+1:]
 	fn__def_ret := strings.Split(def, "(")
 	info.FuncName = strings.TrimSpace(fn__def_ret[0])
-	info.FuncCall = info.FuncName + " ("
+	info.FuncCall = info.FuncName + " ( "
 	def_ret := strings.Split(fn__def_ret[1], ")")
 	prmds := strings.Split(def_ret[0], ",")
 	for idx, val := range prmds {
@@ -77,49 +146,44 @@ func FuncDefToFuncCall(def string) FuncInfo {
 		}
 	}
 	info.FuncCall += ")"
-	if strings.TrimSpace(def_ret[1]) == "" {
+	if len(fn__def_ret) == 2 && strings.TrimSpace(def_ret[1]) == "" {
 		info.Ret = false
 	}
 	return info
 }
 
-// from DllMain.tmp
-const DLL_NAIN_TPL = `package main
-
-// it is product by smnet.suremoon.com
-
-import "C"
-import {{.factory_package}} "{{.factory_path}}"
-
-var val{{.interface_name}} = {{.factory_package}}.Product{{.interface_name}}()
-{{range .func_list}}
-//export {{.func_name}}
-func {{.func_def}}{
-    {{if .ret}}return {{end}}val{{$.interface_name}}.{{.func_call}}
-}
-{{end}}
-`
-
 func main() {
 	ipath := flag.String("ipath", "./datas/code_tools/godll/testdata/IPath.go", "interface's path, the file can only have one interface.")
-	fpath := flag.String("fpath", "./hello/pgt_factory", "package of interface's factory, can get achieve")
+	fimp := flag.String("fimp", "./hello/pgt_factory", "package of interface's factory, can get achieve(use as import fimp in maindll)")
 	fpkg := flag.String("fpkg", "", "package of interface's factory, can get achieve")
+	iimp := flag.String("iimp", "./hello/pgt_interface", "factory of interface, (use as import iimp in maindll.)")
+	ipkg := flag.String("ipkg", "", "package of interface")
 	dpath := flag.String("dpath", "./datas/code_tools/godll/testdata/MainDll.go", "dll's main file, will write to there")
 	itfn := flag.String("itfn", "Hello", "interface's name, use to check if ipath contains this Interface")
+	console := flag.Bool("console", false, "is show reult in console.")
 	flag.Parse()
 
 	if *fpkg == "" {
-		*fpkg = getLastNoZeroStr(strings.Split(*fpath, "/"))
+		*fpkg = getLastNoZeroStr(strings.Split(*fimp, "/"))
 		*fpkg = getLastNoZeroStr(strings.Split(*fpkg, "\\"))
 	}
+
+	if *ipkg == "" {
+		*ipkg = getLastNoZeroStr(strings.Split(*iimp, "/"))
+		*ipkg = getLastNoZeroStr(strings.Split(*ipkg, "\\"))
+	}
+
 	*itfn = strings.TrimSpace(*itfn)
 	bytes, err := smn_file.FileReadAll(*ipath)
 	checkerr(err)
 	ondeal := false
-	dmi := &DLLMainInfo{FactoryPath: *fpath, FactoryPackage: *fpkg, InterfaceName: *itfn}
+	dmi := &DLLMainInfo{FactoryImp: *fimp, FactoryPackage: *fpkg, InterfaceName: *itfn, InterfacePkg: *ipkg, InterfaceImp: *iimp}
 	dmi.FuncList = make([]FuncInfo, 0)
 	for _, line := range strings.Split(string(bytes), "\n") {
 		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
 		if strings.HasPrefix(line, "type") && strings.Contains(line, "interface") && strings.Contains(line, *itfn) {
 			ondeal = true
 			continue
@@ -127,13 +191,16 @@ func main() {
 			break
 		}
 		if ondeal {
+			if ch := line[0]; ch == '/' || ch == '*' || ch == '_' || (ch >= 'a' && ch < 'z') {
+				continue
+			}
 			info := FuncDefToFuncCall(line)
 			dmi.FuncList = append(dmi.FuncList, info)
 		}
 	}
 	dMap, err := smn_data.ValToMap(dmi)
-	render, err := smn_str_rendering.NewStrRender("godll", "", DLL_NAIN_TPL)
-	render.IsWriteToConsole = true
+	render, err := smn_str_rendering.NewStrRender("godll", "", TPL_DLL_NAIN)
+	render.IsWriteToConsole = *console
 	checkerr(err)
 	err = render.ParseData(dMap, *dpath)
 	checkerr(err)
