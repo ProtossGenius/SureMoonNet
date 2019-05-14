@@ -81,6 +81,21 @@ func FuncDefToFuncCall(def string) FuncInfo {
 	return info
 }
 
+const DLL_NAIN_TPL = `package main
+
+// it is product by smnet.suremoon.com
+
+import "C"
+import {{.factory_package}} "{{.factory_path}}"
+
+var val{{.interface_name}} = {{.factory_package}}.Product{{.interface_name}}()
+{{range .func_list}}
+func {{.func_def}}{
+    {{if .ret}}return {{end}}val{{$.interface_name}}.{{.func_call}}
+}
+{{end}}
+`
+
 func main() {
 	ipath := flag.String("ipath", "./datas/code_tools/godll/testdata/IPath.go", "interface's path, the file can only have one interface.")
 	fpath := flag.String("fpath", "./hello/pgt_factory", "package of interface's factory, can get achieve")
@@ -113,7 +128,7 @@ func main() {
 		}
 	}
 	dMap, err := smn_data.ValToMap(dmi)
-	render, err := smn_str_rendering.NewStrRender("godll", "./datas/code_tools/godll/DllMain.tmp")
+	render, err := smn_str_rendering.NewStrRender("godll", "", DLL_NAIN_TPL)
 	render.IsWriteToConsole = true
 	checkerr(err)
 	err = render.ParseData(dMap, *dpath)

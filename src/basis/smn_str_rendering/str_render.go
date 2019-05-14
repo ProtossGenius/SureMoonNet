@@ -140,14 +140,22 @@ func (this *StrRender) ReadJsFuncs(jsPath, funcList string) error {
 	return nil
 }
 
-func NewStrRender(name, tplFile string) (res *StrRender, err error) {
+/**
+ * tplFile[0] is path
+ * tplFile[1] is data.
+ */
+func NewStrRender(name string, tplFile ...string) (res *StrRender, err error) {
 	res = &StrRender{IsWriteToConsole: true, IsParsed: false}
 	tpl := template.New(name)
 	ictr := &Counter{vs: make(map[string]int)}
 	//built in function.
 	tpl.Funcs(template.FuncMap{"iadd": ictr.Iadd, "imult": ictr.Imult, "idiv": ictr.Idiv, "Iset": ictr.Iset, "itrue": ictr.Inz, "iset": ictr.Iset,
 		"isadd": ictr.Isadd, "ismult": ictr.Ismult, "isdiv": ictr.Isdiv})
-	res.readTplFile(tplFile)
+	if len(tplFile) == 1 {
+		res.readTplFile(tplFile[0])
+	} else if len(tplFile) == 2 {
+		res.tplData = tplFile[1]
+	}
 	res.tpl = tpl
 	return res, res.err
 }
