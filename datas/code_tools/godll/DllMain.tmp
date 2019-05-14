@@ -7,6 +7,7 @@ import {{.factory_package}} "{{.factory_path}}"
 
 var val{{.interface_name}} = {{.factory_package}}.Product{{.interface_name}}()
 {{range .func_list}}
+//export {{.func_name}}
 func {{.func_def}}{
     {{if .ret}}return {{end}}val{{$.interface_name}}.{{.func_call}}
 }

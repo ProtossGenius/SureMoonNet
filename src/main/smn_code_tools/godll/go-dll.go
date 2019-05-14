@@ -26,6 +26,7 @@ type FuncInfo struct {
 	FuncDef  string `json:"func_def"`
 	Ret      bool   `json:"ret"`
 	FuncCall string `json:"func_call"`
+	FuncName string `json:"func_name"`
 }
 
 type DLLMainInfo struct {
@@ -58,7 +59,8 @@ func getLastNoZeroStr(strs []string) string {
 func FuncDefToFuncCall(def string) FuncInfo {
 	info := FuncInfo{FuncDef: def, Ret: true}
 	fn__def_ret := strings.Split(def, "(")
-	info.FuncCall = strings.TrimSpace(fn__def_ret[0]) + " ("
+	info.FuncName = strings.TrimSpace(fn__def_ret[0])
+	info.FuncCall = info.FuncName + " ("
 	def_ret := strings.Split(fn__def_ret[1], ")")
 	prmds := strings.Split(def_ret[0], ",")
 	for idx, val := range prmds {
@@ -81,6 +83,7 @@ func FuncDefToFuncCall(def string) FuncInfo {
 	return info
 }
 
+// from DllMain.tmp
 const DLL_NAIN_TPL = `package main
 
 // it is product by smnet.suremoon.com
@@ -90,6 +93,7 @@ import {{.factory_package}} "{{.factory_path}}"
 
 var val{{.interface_name}} = {{.factory_package}}.Product{{.interface_name}}()
 {{range .func_list}}
+//export {{.func_name}}
 func {{.func_def}}{
     {{if .ret}}return {{end}}val{{$.interface_name}}.{{.func_call}}
 }
