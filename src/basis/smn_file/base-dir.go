@@ -33,7 +33,9 @@ func DeepTraversalDir(path string, fileDo FileDoFunc) (info os.FileInfo, err err
 		case FILE_DO_FUNC_RESULT_NO_DEAL:
 			continue
 		case FILE_DO_FUNC_RESULT_DEFAULT:
-			info, err = DeepTraversalDir(fpath, fileDo)
+			if info.IsDir() {
+				info, err = DeepTraversalDir(fpath, fileDo)
+			}
 		default:
 			continue
 		}
