@@ -30,16 +30,16 @@ func getFileLines(fname string) int {
 }
 func main() {
 	count := 0
-	smn_file.DeepTraversalDir("./", func(path string, info os.FileInfo) bool {
+	smn_file.DeepTraversalDir("./", func(path string, info os.FileInfo) int {
 		if info.IsDir() {
-			return true
+			return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 		}
 		for _, n := range filters {
 			if strings.HasSuffix(info.Name(), n) {
 				count += getFileLines(path)
 			}
 		}
-		return true
+		return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 	})
 	f, err := os.OpenFile("./code_line_statistics.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	checkerr(err)

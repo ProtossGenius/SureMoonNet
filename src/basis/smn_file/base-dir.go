@@ -10,7 +10,14 @@ import (
  *	info: file's info
  *  return true continue, false end traversal
  */
-type FileDoFunc func(path string, info os.FileInfo) bool
+
+const (
+	FILE_DO_FUNC_RESULT_DEFAULT = iota
+	FILE_DO_FUNC_RESULT_STOP_TRAV
+	FILE_DO_FUNC_RESULT_NO_DEAL
+)
+
+type FileDoFunc func(path string, info os.FileInfo) int
 
 func DeepTraversalDir(path string, fileDo FileDoFunc) (info os.FileInfo, err error) {
 	dirs, err := ioutil.ReadDir(path)
@@ -20,11 +27,15 @@ func DeepTraversalDir(path string, fileDo FileDoFunc) (info os.FileInfo, err err
 	PthSep := string(os.PathSeparator)
 	for _, info = range dirs {
 		fpath := path + PthSep + info.Name()
-		if !fileDo(fpath, info) {
+		switch fileDo(fpath, info) {
+		case FILE_DO_FUNC_RESULT_STOP_TRAV:
 			return info, nil
-		}
-		if info.IsDir() {
+		case FILE_DO_FUNC_RESULT_NO_DEAL:
+			continue
+		case FILE_DO_FUNC_RESULT_DEFAULT:
 			info, err = DeepTraversalDir(fpath, fileDo)
+		default:
+			continue
 		}
 	}
 	return
