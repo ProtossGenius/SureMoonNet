@@ -3,6 +3,7 @@ package main
 import (
 	"basis/smn_file"
 	"basis/smn_stream"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -29,8 +30,11 @@ func getFileLines(fname string) int {
 	return count
 }
 func main() {
+	base := flag.String("base", "./", "base path")
+	flag.Parse()
+
 	count := 0
-	smn_file.DeepTraversalDir("./", func(path string, info os.FileInfo) int {
+	smn_file.DeepTraversalDir(*base, func(path string, info os.FileInfo) int {
 		if info.IsDir() {
 			return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 		}

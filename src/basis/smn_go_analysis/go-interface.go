@@ -1,1 +1,0 @@
-package smn_go_analysis

@@ -11,7 +11,7 @@ type citf interface {
 	Isdiv(k string, v int) int
 	Iget(k string) int
 	Iset(k string, v int) string
-	Inz(k string) bool
+	Inot0(k string) bool
 }
 
 type Counter struct {
@@ -79,7 +79,7 @@ func (this *Counter) Iget(k string) int {
 	return this.vs[k]
 }
 
-func (this *Counter) Inz(k string) bool {
+func (this *Counter) Inot0(k string) bool {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 	return this.vs[k] != 0

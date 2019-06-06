@@ -48,6 +48,8 @@ func New{{.interface_name}}() int32{
 
 //export Delete{{.interface_name}}
 func Delete{{.interface_name}}(objid int32) bool {
+    oLock.Lock()
+    defer oLock.Unlock()
     if objid >= int32(len(objarr)) || objarr[objid] == nil{
         return false
     }
@@ -191,7 +193,7 @@ func main() {
 			break
 		}
 		if ondeal {
-			if ch := line[0]; ch == '/' || ch == '*' || ch == '_' || (ch >= 'a' && ch < 'z') {
+			if ch := line[0]; ch < 'A' || ch > 'Z' {
 				continue
 			}
 			info := FuncDefToFuncCall(line)
@@ -199,6 +201,7 @@ func main() {
 		}
 	}
 	dMap, err := smn_data.ValToMap(dmi)
+	checkerr(err)
 	render, err := smn_str_rendering.NewStrRender("godll", "", TPL_DLL_NAIN)
 	render.IsWriteToConsole = *console
 	checkerr(err)

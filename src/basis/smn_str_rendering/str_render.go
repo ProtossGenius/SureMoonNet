@@ -149,7 +149,7 @@ func NewStrRender(name string, tplFile ...string) (res *StrRender, err error) {
 	tpl := template.New(name)
 	ictr := &Counter{vs: make(map[string]int)}
 	//built in function.
-	tpl.Funcs(template.FuncMap{"iadd": ictr.Iadd, "imult": ictr.Imult, "idiv": ictr.Idiv, "Iset": ictr.Iset, "itrue": ictr.Inz, "iset": ictr.Iset,
+	tpl.Funcs(template.FuncMap{"iadd": ictr.Iadd, "imult": ictr.Imult, "idiv": ictr.Idiv, "Iset": ictr.Iset, "itrue": ictr.Inot0, "iset": ictr.Iset,
 		"isadd": ictr.Isadd, "ismult": ictr.Ismult, "isdiv": ictr.Isdiv})
 	if len(tplFile) == 1 {
 		res.readTplFile(tplFile[0])

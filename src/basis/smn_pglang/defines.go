@@ -6,19 +6,34 @@ type VarDef struct {
 	ArrSize int    `json:"is_arr"`
 }
 
-type Function struct {
-	Name   string    `json:"name"`
-	Params []*VarDef `json:"params"`
-	Return string    `json:"return"`
+type FuncDef struct {
+	Name    string    `json:"name"`
+	Params  []*VarDef `json:"params"`
+	Ret     bool      `json:"ret"`
+	Returns []*VarDef `json:"returns"`
 }
 
-type Interface struct {
-	Name      string      `json:"name"`
-	Package   string      `json:"package"`
-	Functions []*Function `json:"functions"`
+func (this *FuncDef) Parse() {
+	if len(this.Returns) != 0 && this.Returns[0].Type != "void" {
+		this.Ret = true
+	}
 }
 
-type Class struct {
+func NewFuncDef() *FuncDef {
+	return &FuncDef{Params: make([]*VarDef, 0), Returns: make([]*VarDef, 0)}
+}
+
+type ItfDef struct {
+	Name      string     `json:"name"`
+	Package   string     `json:"package"`
+	Functions []*FuncDef `json:"functions"`
+}
+
+func NewItfDefine() *ItfDef {
+	return &ItfDef{Functions: make([]*FuncDef, 0)}
+}
+
+type ClassDef struct {
 	Father     string `json:"father"`
 	Interfaces string `json:"interfaces"`
 	VarDef     string `json:"var_def"`
@@ -30,8 +45,8 @@ type FuncMapping struct {
 	FuncRename string `json:"func_rename"`
 }
 
-type System struct {
-	Interface
+type SystemDef struct {
+	ItfDef
 	SonSystemNames []*VarDef      `json:"son_systems"`
 	SonModuleNames []*VarDef      `json:"modules"`
 	FuncMappings   []*FuncMapping `json:"func_mappings"`
