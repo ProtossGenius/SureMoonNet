@@ -168,9 +168,12 @@ func (this *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEn
 	}
 	if len(this.LiveMap) == 1 {
 		stateNode.ChangeStateNode(nextNode)
+		if endCnt == 1 {
+			return true, nil
+		}
 	}
 	if endCnt != 0 && len(this.LiveMap) != 1 { // todo: as success return?
-		return true, fmt.Errorf(ErrTooMuchMatchStateNode)
+		return true, fmt.Errorf(ErrTooMuchMatchStateNodeWhenHasEnd)
 	}
-	return true, nil
+	return false, nil
 }
