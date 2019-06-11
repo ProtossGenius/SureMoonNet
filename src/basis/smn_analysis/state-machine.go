@@ -1,4 +1,4 @@
-package lex_analysis
+package smn_analysis
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ func (this *StateNode) PreRead(input InputItf) (isEnd bool, err error) {
 }
 
 func (this *StateNode) Read(input InputItf) (isEnd bool, err error) {
-	return this.reader.PreRead(this, input)
+	return this.reader.Read(this, input)
 }
 
 func (this *StateNode) CleanReader() {
@@ -59,19 +59,22 @@ type StateMachine struct {
 }
 
 func (this *StateMachine) Read(input InputItf) error {
+	if this.nowStateNode == nil {
+		this.useDefault()
+	}
 	isEnd, err := this.nowStateNode.PreRead(input)
 	if iserr(err) {
 		return err
 	}
 	if isEnd {
-		this.nowStateNode = this.DftStateNode
+		this.useDefault()
 	}
 	isEnd, err = this.nowStateNode.Read(input)
 	if iserr(err) {
 		return err
 	}
 	if isEnd {
-		this.backDefault(this.DftStateNode)
+		this.useDefault()
 	}
 	return nil
 }
@@ -85,18 +88,20 @@ func (this *StateMachine) Init() *StateMachine {
 }
 
 func (this *StateMachine) changeStateNode(node *StateNode) {
-	beforeNode := this.nowStateNode
-	go func() {
-		if beforeNode.Result != nil {
-			this.resultChan <- beforeNode.Result
-		}
-	}() // should never block.
+	if this.nowStateNode != nil && this.nowStateNode != this.DftStateNode {
+		beforeNode := this.nowStateNode
+		go func() {
+			if beforeNode.Result != nil {
+				this.resultChan <- beforeNode.Result
+			}
+		}() // should never block.
+	}
 	this.nowStateNode = node
 }
 
-func (this *StateMachine) backDefault(node *StateNode) {
+func (this *StateMachine) useDefault() {
 	this.DftStateNode.CleanReader()
-	this.nowStateNode = this.DftStateNode
+	this.changeStateNode(this.DftStateNode)
 }
 
 func (this *StateMachine) GetResultChan() <-chan ProductItf {
@@ -105,19 +110,26 @@ func (this *StateMachine) GetResultChan() <-chan ProductItf {
 
 type DftStateNodeReader struct {
 	StateNodeReader
+	sm        *StateMachine
 	SNodeList []*StateNode
 	LiveMap   map[*StateNode]byte
 	first     bool //is first call after clean
 }
 
-func NewDftStateNodeReader() *DftStateNodeReader {
-	return &DftStateNodeReader{SNodeList: make([]*StateNode, 0), LiveMap: make(map[*StateNode]byte)}
+func NewDftStateNodeReader(machine *StateMachine) *DftStateNodeReader {
+	return &DftStateNodeReader{sm: machine, SNodeList: make([]*StateNode, 0), LiveMap: make(map[*StateNode]byte)}
+}
+
+func (this *DftStateNodeReader) Register(node StateNodeReader) {
+	this.SNodeList = append(this.SNodeList, (&StateNode{}).Init(this.sm, node))
 }
 
 func (this *DftStateNodeReader) Clean() {
 	for k := range this.LiveMap {
-		k.CleanReader()
 		delete(this.LiveMap, k)
+	}
+	for _, node := range this.SNodeList {
+		node.CleanReader()
 	}
 	this.first = true
 }
@@ -131,6 +143,7 @@ func (this *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEn
 		for _, val := range this.SNodeList {
 			this.LiveMap[val] = 0
 		}
+		this.first = false
 	}
 	liveCnt := 0
 	endCnt := 0
@@ -159,7 +172,6 @@ func (this *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEn
 			nextNode = k
 		}
 	}
-
 	if liveCnt == 0 {
 		return true, fmt.Errorf(ErrNoMatchStateNode, errStr)
 	}

@@ -1,5 +1,7 @@
 package lex_analysis
 
+import "basis/smn_analysis"
+
 type LexType int
 
 const (
@@ -7,12 +9,12 @@ const (
 )
 
 type LexerInput struct {
-	InputItf
+	smn_analysis.InputItf
 	C rune
 }
 
 type LexicalUnit struct {
-	ProductItf
+	smn_analysis.ProductItf
 	Type  LexType
 	Value string
 }
