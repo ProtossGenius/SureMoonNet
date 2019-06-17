@@ -3,7 +3,12 @@ package smn_pglang
 type VarDef struct {
 	Type    string `json:"type"`
 	Var     string `json:"var"`
-	ArrSize int    `json:"is_arr"`
+	ArrSize int    `json:"arr_size"` // not zero means is array; < 0 means don't know its size.
+}
+
+type StructDef struct {
+	Name      string    `json:"name"`
+	Variables []*VarDef `json:"variables"`
 }
 
 type FuncDef struct {
@@ -34,9 +39,11 @@ func NewItfDefine() *ItfDef {
 }
 
 type ClassDef struct {
-	Father     string `json:"father"`
-	Interfaces string `json:"interfaces"`
-	VarDef     string `json:"var_def"`
+	Name       string    `json:"name"`
+	Package    string    `json:"package"`
+	Father     []string  `json:"father"`
+	Interfaces []string  `json:"interfaces"`
+	Variables  []*VarDef `json:"var_def"`
 }
 
 type FuncMapping struct {

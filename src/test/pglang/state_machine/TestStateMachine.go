@@ -28,8 +28,12 @@ type Output struct {
 }
 
 type Type1NodeReader struct {
-	Result Output
+	Result *Output
 	inputs []*Input
+}
+
+func (this *Type1NodeReader) GetProduct() smn_analysis.ProductItf {
+	return this.Result
 }
 
 func (this *Type1NodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
@@ -47,7 +51,7 @@ func (this *Type1NodeReader) Read(stateNode *smn_analysis.StateNode, input smn_a
 	rInp := input.(*Input)
 	this.inputs = append(this.inputs, rInp)
 	if len(this.inputs) == 2 {
-		stateNode.Result = &Output{Result: 1}
+		this.Result = &Output{Result: 1}
 		return true, nil
 	}
 	return false, nil
@@ -58,8 +62,12 @@ func (this *Type1NodeReader) Clean() {
 }
 
 type Type2NodeReader struct {
-	Result Output
+	Result *Output
 	inputs []*Input
+}
+
+func (this *Type2NodeReader) GetProduct() smn_analysis.ProductItf {
+	return this.Result
 }
 
 func (this *Type2NodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
@@ -78,7 +86,7 @@ func (this *Type2NodeReader) Read(stateNode *smn_analysis.StateNode, input smn_a
 	rInp := input.(*Input)
 	this.inputs = append(this.inputs, rInp)
 	if len(this.inputs) == 2 {
-		stateNode.Result = &Output{Result: 2}
+		this.Result = &Output{Result: 2}
 		return true, nil
 	}
 	return false, nil
@@ -89,8 +97,12 @@ func (this *Type2NodeReader) Clean() {
 }
 
 type Type3NodeReader struct {
-	Result Output
+	Result *Output
 	inputs []*Input
+}
+
+func (this *Type3NodeReader) GetProduct() smn_analysis.ProductItf {
+	return this.Result
 }
 
 func (this *Type3NodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
@@ -105,7 +117,7 @@ func (this *Type3NodeReader) PreRead(stateNode *smn_analysis.StateNode, input sm
 func (this *Type3NodeReader) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
 	rInp := input.(*Input)
 	this.inputs = append(this.inputs, rInp)
-	stateNode.Result = &Output{Result: 3}
+	this.Result = &Output{Result: 3}
 	return true, nil
 }
 
@@ -126,8 +138,6 @@ func main() {
 	dftSNR.Register(&Type1NodeReader{})
 	dftSNR.Register(&Type2NodeReader{})
 	dftSNR.Register(&Type3NodeReader{})
-	dftSN := (&smn_analysis.StateNode{}).Init(sm, dftSNR)
-	sm.DftStateNode = dftSN
 	read := func(cs string) {
 		for _, c := range cs {
 			err = sm.Read(&Input{Input: c})
@@ -140,8 +150,12 @@ func main() {
 			time.Sleep(1)
 		}
 	}()
+	result := sm.GetResultChan()
 	for {
-		res := <-sm.GetResultChan()
+		res := <-result
+		if res == nil {
+			continue
+		}
 		out := res.(*Output)
 		fmt.Println(out.Result)
 	}

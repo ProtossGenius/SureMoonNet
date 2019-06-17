@@ -9,6 +9,7 @@ type OnNodeRead func(stateNode *StateNode, input InputItf) (isEnd bool, err erro
 type StateNodeReader interface {
 	PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error)
 	Read(stateNode *StateNode, input InputItf) (isEnd bool, err error)
+	GetProduct() ProductItf
 	Clean()
 }
 
@@ -16,6 +17,7 @@ type InputItf interface {
 }
 
 type ProductItf interface {
+	ProductType() int
 }
 
 type StateNode struct {
@@ -42,7 +44,12 @@ func (this *StateNode) Read(input InputItf) (isEnd bool, err error) {
 }
 
 func (this *StateNode) CleanReader() {
+	this.Result = nil
 	this.reader.Clean()
+}
+
+func (this *StateNode) GetProduct() {
+	this.Result = this.reader.GetProduct()
 }
 
 func (this *StateNode) ChangeStateNode(nextNode *StateNode) {
@@ -90,18 +97,17 @@ func (this *StateMachine) Init() *StateMachine {
 func (this *StateMachine) changeStateNode(node *StateNode) {
 	if this.nowStateNode != nil && this.nowStateNode != this.DftStateNode {
 		beforeNode := this.nowStateNode
-		go func() {
-			if beforeNode.Result != nil {
-				this.resultChan <- beforeNode.Result
-			}
-		}() // should never block.
+		beforeNode.GetProduct()
+		if beforeNode.Result != nil {
+			this.resultChan <- beforeNode.Result
+		}
 	}
 	this.nowStateNode = node
 }
 
 func (this *StateMachine) useDefault() {
-	this.DftStateNode.CleanReader()
 	this.changeStateNode(this.DftStateNode)
+	this.DftStateNode.CleanReader()
 }
 
 func (this *StateMachine) GetResultChan() <-chan ProductItf {
@@ -116,8 +122,14 @@ type DftStateNodeReader struct {
 	first     bool //is first call after clean
 }
 
+func (this *DftStateNodeReader) GetProduct() ProductItf {
+	return nil
+}
+
 func NewDftStateNodeReader(machine *StateMachine) *DftStateNodeReader {
-	return &DftStateNodeReader{sm: machine, SNodeList: make([]*StateNode, 0), LiveMap: make(map[*StateNode]byte)}
+	dft := &DftStateNodeReader{sm: machine, SNodeList: make([]*StateNode, 0), LiveMap: make(map[*StateNode]byte)}
+	machine.DftStateNode = (&StateNode{}).Init(machine, dft)
+	return dft
 }
 
 func (this *DftStateNodeReader) Register(node StateNodeReader) {

@@ -19,6 +19,10 @@ type LexicalUnit struct {
 	Value string
 }
 
+func (this *LexicalUnit) ProductType() int {
+	return int(this.Type)
+}
+
 type LexicalCfg struct {
 	StartCharset    string   `json:"start_charset"` //must in this charset.
 	StartWith       []string `json:"start_with"`    //if len != 0, only when find those string can do.
