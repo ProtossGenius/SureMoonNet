@@ -1,6 +1,6 @@
 package lex_analysis
 
-import "basis/smn_analysis"
+import "com.suremoon.net/basis/smn_analysis"
 
 type LexType int
 
