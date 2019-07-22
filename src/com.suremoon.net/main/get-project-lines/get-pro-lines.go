@@ -34,7 +34,7 @@ func main() {
 	flag.Parse()
 
 	count := 0
-	smn_file.DeepTraversalDir(*base, func(path string, info os.FileInfo) int {
+	smn_file.DeepTraversalDir(*base, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if info.IsDir() {
 			return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 		}

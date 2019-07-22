@@ -9,7 +9,7 @@ import (
 
 func LoadSystem(folderPath, sysName string) (sMap map[string]interface{}, err error) {
 	sMap = make(map[string]interface{})
-	smn_file.DeepTraversalDir(folderPath, func(path string, info os.FileInfo) int {
+	smn_file.DeepTraversalDir(folderPath, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if !info.IsDir() {
 			ts := &SystemDef{}
 			bytes, err := smn_file.FileReadAll(path)
