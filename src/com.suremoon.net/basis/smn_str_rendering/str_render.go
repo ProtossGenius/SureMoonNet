@@ -5,6 +5,7 @@ import (
 	"com.suremoon.net/basis/smn_file"
 	"com.suremoon.net/basis/smn_func"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/template"
@@ -13,7 +14,7 @@ import (
 
 type CFWriter struct {
 	IsWriteToConsole bool
-	file             *os.File
+	file             io.Writer
 }
 
 func (this *CFWriter) Write(p []byte) (n int, err error) {
@@ -69,6 +70,15 @@ func (this *StrRender) ParseFileData(dataFile, outFile string) error {
 	return this.ParseData(dataMap, outFile)
 }
 func (this *StrRender) ParseData(data interface{}, outFile string) error {
+	out, err := smn_file.CreateNewFile(outFile)
+	defer out.Close()
+	if iserr(err) {
+		return err
+	}
+	return this.ParseDataToWritter(data, out)
+}
+
+func (this *StrRender) ParseDataToWritter(data interface{}, writer io.Writer) error {
 	if !this.IsParsed {
 		if this.inError() {
 			return this.err
@@ -78,11 +88,7 @@ func (this *StrRender) ParseData(data interface{}, outFile string) error {
 			return this.err
 		}
 	}
-	out, err := smn_file.CreateNewFile(outFile)
-	if iserr(err) {
-		return err
-	}
-	return this.tpl.Execute(&CFWriter{file: out, IsWriteToConsole: this.IsWriteToConsole}, data)
+	return this.tpl.Execute(&CFWriter{file: writer, IsWriteToConsole: this.IsWriteToConsole}, data)
 }
 
 func (this *StrRender) getFuncList(jsContent, funcList string) (res map[string]int) {
@@ -141,8 +147,8 @@ func (this *StrRender) ReadJsFuncs(jsPath, funcList string) error {
 }
 
 /**
- * tplFile[0] is path
- * tplFile[1] is data.
+ * tplFile[0] is template file path
+ * tplFile[1] is template data.
  */
 func NewStrRender(name string, tplFile ...string) (res *StrRender, err error) {
 	res = &StrRender{IsWriteToConsole: true, IsParsed: false}

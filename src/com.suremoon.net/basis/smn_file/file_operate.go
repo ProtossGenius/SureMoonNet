@@ -1,6 +1,7 @@
 package smn_file
 
 import (
+	"bufio"
 	"io/ioutil"
 	"os"
 )
@@ -43,4 +44,12 @@ func FileReadAll(path string) ([]byte, error) {
 	b, e := ioutil.ReadAll(cfg)
 	cfg.Close()
 	return b, e
+}
+
+func FileScanner(path string) (*bufio.Scanner, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return bufio.NewScanner(file), nil
 }

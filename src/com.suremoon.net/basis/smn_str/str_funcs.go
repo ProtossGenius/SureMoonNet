@@ -91,3 +91,11 @@ func GetConstDefine(name string) string {
 	}
 	return res
 }
+
+func RepeatJoin(word, seq string, num int) string {
+	words := make([]string, 0)
+	for i := 0; i < num; i++ {
+		words = append(words, word)
+	}
+	return strings.Join(words, seq)
+}
