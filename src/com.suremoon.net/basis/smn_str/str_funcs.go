@@ -1,6 +1,7 @@
 package smn_str
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -98,4 +99,12 @@ func RepeatJoin(word, seq string, num int) string {
 		words = append(words, word)
 	}
 	return strings.Join(words, seq)
+}
+
+func ToInt(val string) int {
+	rv, err := strconv.Atoi(val)
+	if err != nil {
+		return 0
+	}
+	return rv
 }
