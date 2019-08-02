@@ -6,4 +6,6 @@ enum EDict{
 	None = 0;
 	base_Call = 1;
 	base_Qnm = 2;
+	rpc_itf_Rpc_Itf_DoLogin_Prm = 5;
+	rpc_itf_Rpc_Itf_DoLogin_Ret = 6;
 }

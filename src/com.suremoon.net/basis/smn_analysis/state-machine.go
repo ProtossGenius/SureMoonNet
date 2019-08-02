@@ -14,10 +14,17 @@ type StateNodeReader interface {
 }
 
 type InputItf interface {
+	Copy() InputItf
 }
 
 type ProductItf interface {
-	ProductType() int
+	ProductType() int //-1 --> end.
+}
+
+type ProductEnd struct{}
+
+func (*ProductEnd) ProductType() int {
+	return -1
 }
 
 type StateNode struct {
@@ -105,6 +112,10 @@ func (this *StateMachine) changeStateNode(node *StateNode) {
 	this.nowStateNode = node
 }
 
+func (this *StateMachine) End() {
+	this.resultChan <- &ProductEnd{}
+}
+
 func (this *StateMachine) useDefault() {
 	this.changeStateNode(this.DftStateNode)
 	this.DftStateNode.CleanReader()
@@ -162,7 +173,7 @@ func (this *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEn
 	errStr := ""
 	var nextNode *StateNode
 	for k := range this.LiveMap {
-		kend, kerr := k.PreRead(input)
+		kend, kerr := k.PreRead(input.Copy())
 		if iserr(kerr) {
 			errStr += kerr.Error()
 		}
@@ -170,7 +181,7 @@ func (this *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEn
 			delete(this.LiveMap, k)
 			continue
 		}
-		kend, kerr = k.Read(input)
+		kend, kerr = k.Read(input.Copy())
 		if iserr(kerr) {
 			delete(this.LiveMap, k)
 			continue

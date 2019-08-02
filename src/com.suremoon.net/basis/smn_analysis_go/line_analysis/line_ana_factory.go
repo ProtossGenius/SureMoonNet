@@ -15,14 +15,55 @@ type LineInput struct {
 	Input string
 }
 
+func (this *LineInput) Copy() smn_analysis.InputItf {
+	return &LineInput{Input: this.Input}
+}
+
+const (
+	ProductType_Struct = iota
+	ProductType_Itf
+	ProductType_Pkg
+)
+
+func NewGoAnalysis() *smn_analysis.StateMachine {
+	sm := (&smn_analysis.StateMachine{}).Init()
+	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
+	dftSNR.Register(&GoStructNodeReader{})
+	dftSNR.Register(&GoItfNodeReader{})
+	dftSNR.Register(&GoPkgNodeReader{})
+	return sm
+}
+
+//
+//func AnalysisFile(path string) ([]smn_analysis.ProductItf, error) {
+//
+//}
+
 type GoStruct struct {
 	smn_analysis.ProductItf
 	Result *smn_pglang.StructDef
 }
 
+func (*GoStruct) ProductType() int {
+	return ProductType_Struct
+}
+
 type GoItf struct {
 	smn_analysis.ProductItf
 	Result *smn_pglang.ItfDef
+}
+
+func (*GoItf) ProductType() int {
+	return ProductType_Itf
+}
+
+type GoPkg struct {
+	smn_analysis.ProductItf
+	Pkg string
+}
+
+func (*GoPkg) ProductType() int {
+	return ProductType_Pkg
 }
 
 type GoStructNodeReader struct {
@@ -33,6 +74,7 @@ type GoStructNodeReader struct {
 const (
 	ErrNotStructHead     = "ErrNotStructHead: %s"
 	ErrNotItfHead        = "ErrNotItfHead: %s"
+	ErrNotPkgDef         = "ErrNotPkgDef"
 	ErrItfExitWithStash  = "ErrItfExitWithStash: %s"
 	ErrNotStructBody     = "ErrNotStructBody: %s"
 	ErrStructUnknowInput = "ErrStructUnknowInput: %s"
@@ -187,4 +229,36 @@ func (this *GoItfNodeReader) Clean() {
 	this.reading = false
 	this.hasStash = false
 	this.Result = &GoItf{Result: smn_pglang.NewItfDefine()}
+}
+
+type GoPkgNodeReader struct {
+	Result *GoPkg
+}
+
+func (this *GoPkgNodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+	return false, nil
+}
+
+func (this *GoPkgNodeReader) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+	in := input.(*LineInput)
+	in.Input = smn_str.DropLineComment(in.Input)
+	in.Input = strings.Replace(in.Input, "{", "", -1)
+	if in.Input == "" {
+		return false, nil
+	}
+	if strings.HasPrefix(in.Input, "package") {
+		pkg := strings.Split(in.Input[7:], "/")[0]
+		pkg = strings.TrimSpace(pkg)
+		this.Result.Pkg = pkg
+		return true, nil
+	}
+	return true, fmt.Errorf(ErrNotPkgDef)
+}
+
+func (this *GoPkgNodeReader) GetProduct() smn_analysis.ProductItf {
+	return this.Result
+}
+
+func (this *GoPkgNodeReader) Clean() {
+	this.Result = &GoPkg{}
 }

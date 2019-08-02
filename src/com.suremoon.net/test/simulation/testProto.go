@@ -1,12 +1,12 @@
 package main
 
 import (
+	"com.suremoon.net/basis/smn_str"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"pb/base"
 	"pb/dict"
 	"pbr"
-	"strings"
 )
 
 type itf interface {
@@ -21,7 +21,7 @@ func checkerr(err error) {
 	}
 }
 func main() {
-	fmt.Println(strings.SplitN("helloworld", "o", 2))
+	fmt.Println(smn_str.InitialsUpper(""))
 	c := &base.Call{Dict: 123}
 	bytes, err := proto.Marshal(c)
 	checkerr(err)

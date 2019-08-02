@@ -36,7 +36,6 @@ func getPkg(path string) string {
 	checkerr(err)
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
-
 		if strings.HasPrefix(line, "package") {
 			pkg := strings.Split(line[7:], ";")[0]
 			pkg = strings.TrimSpace(pkg)

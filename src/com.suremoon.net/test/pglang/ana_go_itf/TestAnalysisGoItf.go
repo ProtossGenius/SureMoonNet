@@ -1,7 +1,6 @@
 package main
 
 import (
-	"com.suremoon.net/basis/smn_analysis"
 	"com.suremoon.net/basis/smn_analysis_go/line_analysis"
 	"com.suremoon.net/basis/smn_data"
 	"fmt"
@@ -10,15 +9,12 @@ import (
 )
 
 func main() {
-	sm := (&smn_analysis.StateMachine{}).Init()
-	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
-	dftSNR.Register(&line_analysis.GoStructNodeReader{})
-	dftSNR.Register(&line_analysis.GoItfNodeReader{})
+	sm := line_analysis.NewGoAnalysis()
 	str := `
-
+package hello
 type itf interface {
 	f(a int,
-		b int) (int,
+		b[] int) (int,
 		int)
 }
 
@@ -42,14 +38,17 @@ type itf2 interface {
 		}
 	}()
 	for {
-		for {
-			res := <-result
-			if res == nil {
-				continue
-			}
-			out := res.(*line_analysis.GoItf)
-			str, err := smn_data.ValToJson(out.Result)
-			fmt.Printf("zzzzzzzzzzzzzzzzzzzzzzzzzz %s %v\n", str, err)
+		res := <-result
+		if res == nil {
+			continue
 		}
+		if res.ProductType() != line_analysis.ProductType_Itf {
+			fmt.Println(res.(*line_analysis.GoPkg).Pkg)
+			continue
+		}
+		out := res.(*line_analysis.GoItf)
+		str, err := smn_data.ValToJson(out.Result)
+		fmt.Printf("zzzzzzzzzzzzzzzzzzzzzzzzzz %s %v\n", str, err)
 	}
+
 }

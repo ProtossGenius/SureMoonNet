@@ -35,6 +35,11 @@ func GetParamsFromStr(prms string) []*smn_pglang.VarDef {
 			res[i].Var = fmt.Sprintf("p%d", i)
 		}
 	}
+	for i := 0; i < len(res); i++ {
+		if strings.Contains(res[i].Type, "[]") {
+			res[i].ArrSize = -1
+		}
+	}
 	return res
 }
 
@@ -50,8 +55,10 @@ func GetFuncDefFromStr(line string) (*smn_pglang.FuncDef, error) {
 		prmAres[i] = strings.TrimSpace(prmAres[i])
 	}
 	f.Params = GetParamsFromStr(prmAres[0][1:])
-	if len(prmAres) > 1 && strings.HasPrefix(prmAres[1], "(") {
-		f.Returns = GetParamsFromStr(prmAres[1][1:])
+	if len(prmAres) > 1 {
+		res := strings.Replace(prmAres[1], "(", "", -1)
+		res = strings.TrimSpace(res)
+		f.Returns = GetParamsFromStr(res)
 	}
 	return f, nil
 }
