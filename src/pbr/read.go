@@ -8,9 +8,15 @@ import "pb/dict"
 import "pb/base"
 var funcList = []funcGetMsg {
     dict.EDict_base_Call:base_Call,
+    dict.EDict_base_Qnm:base_Qnm,
 }
 func base_Call(bytes []byte) proto.Message {
     msg := &base.Call{}
+    proto.Unmarshal(bytes, msg)
+    return msg
+}
+func base_Qnm(bytes []byte) proto.Message {
+    msg := &base.Qnm{}
     proto.Unmarshal(bytes, msg)
     return msg
 }

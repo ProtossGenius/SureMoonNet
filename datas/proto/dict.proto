@@ -5,4 +5,5 @@ package dict;
 enum EDict{
 	None = 0;
 	base_Call = 1;
+	base_Qnm = 2;
 }

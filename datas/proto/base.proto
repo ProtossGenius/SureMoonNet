@@ -6,3 +6,8 @@ message Call{
     int32 dict = 1;
     bytes msg = 2;
 }
+
+message Qnm{
+    int32 a = 1;
+    int32 A = 2;
+}

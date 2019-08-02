@@ -6,6 +6,7 @@ import (
 	"pb/base"
 	"pb/dict"
 	"pbr"
+	"strings"
 )
 
 type itf interface {
@@ -20,6 +21,7 @@ func checkerr(err error) {
 	}
 }
 func main() {
+	fmt.Println(strings.SplitN("helloworld", "o", 2))
 	c := &base.Call{Dict: 123}
 	bytes, err := proto.Marshal(c)
 	checkerr(err)

@@ -10,15 +10,15 @@ import (
 	"strings"
 )
 
-func analysisTwoSplitTrim(str string) (string, string) {
+func AnalysisTwoSplitTrim(str string) (string, string) {
 	return smn_str.AnalysisTwoSplitTrim(str, smn_str.CIdentifierJoinEndCheck, smn_str.CIdentifierDropEndCheck)
 }
 
-func getParamsFromStr(prms string) []*smn_pglang.VarDef {
+func GetParamsFromStr(prms string) []*smn_pglang.VarDef {
 	prmList := strings.Split(prms, ",")
 	res := make([]*smn_pglang.VarDef, 0, len(prmList))
 	for _, str := range prmList {
-		v, t := analysisTwoSplitTrim(str)
+		v, t := AnalysisTwoSplitTrim(str)
 		res = append(res, &smn_pglang.VarDef{Var: v, Type: t})
 	}
 	lastType := ""
@@ -29,12 +29,18 @@ func getParamsFromStr(prms string) []*smn_pglang.VarDef {
 			res[i].Type = lastType
 		}
 	}
+	if lastType == "" {
+		for i := 0; i < len(res); i++ {
+			res[i].Type = res[i].Var
+			res[i].Var = fmt.Sprintf("p%d", i)
+		}
+	}
 	return res
 }
 
-func getFuncDefFromStr(line string) (*smn_pglang.FuncDef, error) {
+func GetFuncDefFromStr(line string) (*smn_pglang.FuncDef, error) {
 	f := &smn_pglang.FuncDef{}
-	name, another := analysisTwoSplitTrim(line)
+	name, another := AnalysisTwoSplitTrim(line)
 	f.Name = name
 	if !strings.Contains(another, ")") || !strings.HasPrefix(another, "(") {
 		return nil, fmt.Errorf(ErrUnexpectedGoFunctionDefinition, line)
@@ -43,9 +49,9 @@ func getFuncDefFromStr(line string) (*smn_pglang.FuncDef, error) {
 	for i := range prmAres {
 		prmAres[i] = strings.TrimSpace(prmAres[i])
 	}
-	f.Params = getParamsFromStr(prmAres[0][1:])
+	f.Params = GetParamsFromStr(prmAres[0][1:])
 	if len(prmAres) > 1 && strings.HasPrefix(prmAres[1], "(") {
-		f.Returns = getParamsFromStr(prmAres[1][1:])
+		f.Returns = GetParamsFromStr(prmAres[1][1:])
 	}
 	return f, nil
 }
@@ -65,14 +71,14 @@ func ReadGooneItf(path string) (res *smn_pglang.ItfDef, err error) {
 			continue
 		}
 		if strings.HasPrefix(line, "package") {
-			_, line = analysisTwoSplitTrim(line) //drop `package`
-			line, _ = analysisTwoSplitTrim(line) //get packageName
+			_, line = AnalysisTwoSplitTrim(line) //drop `package`
+			line, _ = AnalysisTwoSplitTrim(line) //get packageName
 			res.Package = line
 			continue
 		}
 		if strings.HasPrefix(line, "type") {
-			_, line = analysisTwoSplitTrim(line) //drop `type`
-			line, _ = analysisTwoSplitTrim(line) //get interfaceName
+			_, line = AnalysisTwoSplitTrim(line) //drop `type`
+			line, _ = AnalysisTwoSplitTrim(line) //get interfaceName
 			res.Name = line
 			continue
 		}
@@ -90,7 +96,7 @@ func ReadGooneItf(path string) (res *smn_pglang.ItfDef, err error) {
 			line = str + line
 			str = ""
 		}
-		fdef, err := getFuncDefFromStr(line)
+		fdef, err := GetFuncDefFromStr(line)
 		if iserr(err) {
 			return nil, err
 		}
