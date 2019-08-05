@@ -29,12 +29,16 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 	}
 	w.Append(smn_muti_write_cache.NewStrCache(fmt.Sprintf("syntax = \"proto3\";\n\npackage %s;\n", pkg)))
 	impts := smn_muti_write_cache.NewStrCache()
+	impMap := make(map[string]bool)
 	checkImport := func(typ string) {
 		list := strings.Split(typ, ".")
 		if len(list) == 1 {
 			return
 		}
-		impts.WriteTail(fmt.Sprintf("import \"%s.proto\";", list[0]) + "\n")
+		if !impMap[list[0]] {
+			impts.WriteTail(fmt.Sprintf("import \"%s.proto\";", list[0]) + "\n")
+			impMap[list[0]] = true
+		}
 	}
 	w.Append(impts)
 	for _, itf := range list {
@@ -45,7 +49,7 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 			}
 			writeLine("message %s_%s_Prm {", smn_str.PkgUpper(pkg), mtd.Name)
 			for i, prm := range mtd.Params {
-				isArray, typ := smn_str.TypDeal(prm.Type)
+				isArray, typ := smn_str.ProtoUseDeal(prm.Type)
 				checkImport(typ)
 				rpt := ""
 				if isArray {
@@ -56,7 +60,7 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 			writeLine("}")
 			writeLine("message %s_%s_Ret {", smn_str.PkgUpper(pkg), mtd.Name)
 			for i, res := range mtd.Returns {
-				isArray, typ := smn_str.TypDeal(res.Type)
+				isArray, typ := smn_str.ProtoUseDeal(res.Type)
 				checkImport(typ)
 				rpt := ""
 				if isArray {

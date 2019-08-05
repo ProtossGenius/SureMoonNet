@@ -34,10 +34,11 @@ func PkgUpper(pkg string) string {
 	return strings.Join(list, "_")
 }
 
-//drop `//` and let int as int64(proto not have int)
-func TypDeal(typ string) (isArray bool, nt string) {
+//drop `[]`, `*` and let int as int64(proto not have int)
+func ProtoUseDeal(typ string) (isArray bool, nt string) {
 	isArray = strings.Contains(typ, "[]")
 	strings.Replace(typ, "[]", "", -1)
+	strings.Replace(typ, "*", "", -1)
 	nt = strings.TrimSpace(typ)
 	if nt == "int" {
 		nt = "int64"
