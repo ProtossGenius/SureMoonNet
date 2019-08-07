@@ -60,6 +60,7 @@ func GetItfList(path string) ([]*smn_pglang.ItfDef, error) {
 	return res, nil
 }
 
+//result map : package -> []*smn_pglang.ItfDef
 func GetItfListFromDir(path string) (map[string][]*smn_pglang.ItfDef, error) {
 	res := make(map[string][]*smn_pglang.ItfDef)
 	var err error

@@ -9,3 +9,11 @@ win_proto: proto_compile
 	
 win_go_protoread: proto_read win_proto
 	"./bin/proto_read" -proto "./datas/proto/" -pkgh "pb/" -o "./src/pbr/read.go"
+
+getlines:
+	go build -o ./bin/getlines.exe ./src/com.suremoon.net/main/get-project-lines/get-pro-lines.go 
+	./bin/getlines.exe
+
+importpkg:
+	go get -u  github.com/json-iterator/go
+	go get -u  github.com/robertkrimen/otto
