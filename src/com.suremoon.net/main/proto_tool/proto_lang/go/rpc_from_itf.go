@@ -1,10 +1,9 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-
+	"com.suremoon.net/basis/smn_pglang"
 	"com.suremoon.net/smn/analysis/smn_rpc_itf"
+	"flag"
 )
 
 func check(err error) {
