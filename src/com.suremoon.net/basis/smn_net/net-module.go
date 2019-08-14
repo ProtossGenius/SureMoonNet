@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"net"
+	"pb/base"
+	"pb/dict"
 )
 
 type TcpServer struct {
@@ -38,8 +40,8 @@ func (this *TcpServer) Run() {
 }
 
 type MessageAdapterItf interface {
-	WriteMessage(message proto.Message) error
-	ReadMessage() ([]byte, error)
+	WriteMessage(dict dict.EDict, message proto.Message) (int, error)
+	ReadMessage() (*base.Call, error)
 }
 
 type MessageAdapter struct {
@@ -50,20 +52,21 @@ func NewMessageAdapter(conn net.Conn) MessageAdapterItf {
 	return &MessageAdapter{c: conn}
 }
 
-func (this *MessageAdapter) WriteMessage(message proto.Message) error {
+func (this *MessageAdapter) WriteMessage(dict dict.EDict, message proto.Message) (int, error) {
 	bytes, err := proto.Marshal(message)
 	if iserr(err) {
-		return err
+		return 0, err
 	}
+	msg := &base.Call{Dict: dict, Msg: bytes}
+	bytes, err = proto.Marshal(msg)
 	err = WriteInt(len(bytes), this.c)
 	if iserr(err) {
-		return err
+		return 0, err
 	}
-	_, err = this.c.Write(bytes)
-	return err
+	return this.c.Write(bytes)
 }
 
-func (this *MessageAdapter) ReadMessage() ([]byte, error) {
+func (this *MessageAdapter) ReadMessage() (*base.Call, error) {
 	len, err := ReadInt(this.c)
 	if iserr(err) {
 		return nil, err
@@ -76,5 +79,7 @@ func (this *MessageAdapter) ReadMessage() ([]byte, error) {
 	if rl != len {
 		return nil, fmt.Errorf(ErrNotGetEnoughLengthBytes, len, rl)
 	}
-	return bytes, err
+	msg := &base.Call{}
+	proto.Unmarshal(bytes, msg)
+	return msg, err
 }

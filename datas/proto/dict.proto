@@ -5,7 +5,8 @@ package dict;
 enum EDict{
 	None = 0;
 	base_Call = 1;
-	base_Qnm = 2;
-	rpc_itf_Rpc_Itf_DoLogin_Prm = 5;
-	rpc_itf_Rpc_Itf_DoLogin_Ret = 6;
+	rip_rpc_itf_Login_DoLogin_Ret = 2;
+	rip_rpc_itf_Login_Test1_Ret = 3;
+	rip_rpc_itf_Login_DoLogin_Prm = 4;
+	rip_rpc_itf_Login_Test1_Prm = 5;
 }

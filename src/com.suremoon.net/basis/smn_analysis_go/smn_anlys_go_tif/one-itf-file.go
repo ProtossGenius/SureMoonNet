@@ -36,6 +36,11 @@ func GetParamsFromStr(prms string) []*smn_pglang.VarDef {
 		}
 	}
 	for i := 0; i < len(res); i++ {
+		if res[i].Var == "" {
+			res[i].Var = fmt.Sprintf("p%d", i)
+		}
+	}
+	for i := 0; i < len(res); i++ {
 		if strings.Contains(res[i].Type, "[]") {
 			res[i].ArrSize = -1
 		}

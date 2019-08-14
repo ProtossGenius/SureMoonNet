@@ -117,11 +117,16 @@ func (this *GoBlock) _addIndentation(str string, corr int) string {
 
 func (this *GoBlock) Write(format string, a ...interface{}) {
 	str := fmt.Sprintf(format, a...)
+	this.Append(smn_muti_write_cache.NewStrCache(str))
+}
+
+func (this *GoBlock) WriteToNewLine(format string, a ...interface{}) {
+	str := fmt.Sprintf(format, a...)
 	this.Append(smn_muti_write_cache.NewStrCache(this._addIndentation(str, 1)))
 }
 
 func (this *GoBlock) WriteLine(format string, a ...interface{}) {
-	this.Write(format+"\n", a...)
+	this.WriteToNewLine(format+"\n", a...)
 }
 
 func (this *GoBlock) AddBlock(format string, a ...interface{}) *GoBlock {

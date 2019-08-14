@@ -27,7 +27,7 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 	writeLine := func(f string, a ...interface{}) {
 		w.WriteTail(fmt.Sprintf(f, a...) + "\n")
 	}
-	w.Append(smn_muti_write_cache.NewStrCache(fmt.Sprintf("syntax = \"proto3\";\n\npackage %s;\n", pkg)))
+	w.Append(smn_muti_write_cache.NewStrCache(fmt.Sprintf("syntax = \"proto3\";\n\npackage rip_%s;\n", pkg)))
 	impts := smn_muti_write_cache.NewStrCache()
 	impMap := make(map[string]bool)
 	checkImport := func(typ string) {
@@ -47,7 +47,7 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 				log.Printf("warning! mtd.Name %s's first letter not upper\n", mtd.Name)
 				continue
 			}
-			writeLine("message %s_%s_Prm {", smn_str.PkgUpper(pkg), mtd.Name)
+			writeLine("message %s_%s_Prm {", itf.Name, mtd.Name)
 			for i, prm := range mtd.Params {
 				isArray, typ := smn_str.ProtoUseDeal(prm.Type)
 				checkImport(typ)
@@ -58,7 +58,7 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 				writeLine("\t%s%s %s = %d;", rpt, typ, prm.Var, i+1)
 			}
 			writeLine("}")
-			writeLine("message %s_%s_Ret {", smn_str.PkgUpper(pkg), mtd.Name)
+			writeLine("message %s_%s_Ret {", itf.Name, mtd.Name)
 			for i, res := range mtd.Returns {
 				isArray, typ := smn_str.ProtoUseDeal(res.Type)
 				checkImport(typ)
@@ -83,6 +83,6 @@ func main() {
 	itfs, err := smn_rpc_itf.GetItfListFromDir(*i)
 	checkerr(err)
 	for pkg, list := range itfs {
-		writeProto(*o+"/"+pkg+".proto", list)
+		writeProto(*o+"/rip_"+pkg+".proto", list)
 	}
 }

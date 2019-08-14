@@ -6,30 +6,36 @@ package smn_pbr
 import "github.com/golang/protobuf/proto"
 import "pb/dict"
 import "pb/base"
-import "pb/rpc_itf"
+import "pb/rip_rpc_itf"
 var funcList = []funcGetMsg {
     dict.EDict_base_Call:base_Call,
-    dict.EDict_base_Qnm:base_Qnm,
-    dict.EDict_rpc_itf_Rpc_Itf_DoLogin_Prm:rpc_itf_Rpc_Itf_DoLogin_Prm,
-    dict.EDict_rpc_itf_Rpc_Itf_DoLogin_Ret:rpc_itf_Rpc_Itf_DoLogin_Ret,
+    dict.EDict_rip_rpc_itf_Login_DoLogin_Ret:rip_rpc_itf_Login_DoLogin_Ret,
+    dict.EDict_rip_rpc_itf_Login_Test1_Ret:rip_rpc_itf_Login_Test1_Ret,
+    dict.EDict_rip_rpc_itf_Login_DoLogin_Prm:rip_rpc_itf_Login_DoLogin_Prm,
+    dict.EDict_rip_rpc_itf_Login_Test1_Prm:rip_rpc_itf_Login_Test1_Prm,
 }
 func base_Call(bytes []byte) proto.Message {
     msg := &base.Call{}
     proto.Unmarshal(bytes, msg)
     return msg
 }
-func base_Qnm(bytes []byte) proto.Message {
-    msg := &base.Qnm{}
+func rip_rpc_itf_Login_DoLogin_Ret(bytes []byte) proto.Message {
+    msg := &rip_rpc_itf.Login_DoLogin_Ret{}
     proto.Unmarshal(bytes, msg)
     return msg
 }
-func rpc_itf_Rpc_Itf_DoLogin_Prm(bytes []byte) proto.Message {
-    msg := &rpc_itf.Rpc_Itf_DoLogin_Prm{}
+func rip_rpc_itf_Login_Test1_Ret(bytes []byte) proto.Message {
+    msg := &rip_rpc_itf.Login_Test1_Ret{}
     proto.Unmarshal(bytes, msg)
     return msg
 }
-func rpc_itf_Rpc_Itf_DoLogin_Ret(bytes []byte) proto.Message {
-    msg := &rpc_itf.Rpc_Itf_DoLogin_Ret{}
+func rip_rpc_itf_Login_DoLogin_Prm(bytes []byte) proto.Message {
+    msg := &rip_rpc_itf.Login_DoLogin_Prm{}
+    proto.Unmarshal(bytes, msg)
+    return msg
+}
+func rip_rpc_itf_Login_Test1_Prm(bytes []byte) proto.Message {
+    msg := &rip_rpc_itf.Login_Test1_Prm{}
     proto.Unmarshal(bytes, msg)
     return msg
 }

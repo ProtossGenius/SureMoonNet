@@ -2,12 +2,9 @@ syntax = "proto3";
 
 package base;
 
-message Call{
-    int32 dict = 1;
-    bytes msg = 2;
-}
+import "dict.proto";
 
-message Qnm{
-    int32 a = 1;
-    int32 A = 2;
+message Call{
+    dict.EDict dict = 1;
+    bytes msg = 2;
 }
