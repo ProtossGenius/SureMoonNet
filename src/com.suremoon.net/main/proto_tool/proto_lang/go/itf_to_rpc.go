@@ -92,14 +92,24 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 			b.WriteLine("return this.dicts")
 		}
 		{ // struct get net-package
-			b := gof.AddBlock("func (this *SvrRpc%s)OnMessage(c *base.Call) (dict.EDict, proto.Message)", itf.Name)
+			b := gof.AddBlock("func (this *SvrRpc%s)OnMessage(c *base.Call) (_d dict.EDict, _p proto.Message, _e error)", itf.Name)
 			b.Imports("base")
 			b.Imports("smn_pbr")
+			{ // rb = recover func
+				b.WriteLine("defer func() {")
+				ib := b.AddBlock("if err := recover(); err != nil {")
+				ib.IndentationAdd(1)
+				ib.WriteLine("_p = nil")
+				ib.Imports("fmt")
+				ib.WriteLine("_e = fmt.Errorf(\"%%v\", err)")
+				b.WriteLine("}()")
+			}
 			b.WriteLine("m := smn_pbr.GetMsgByDict(c.Msg, c.Dict)")
 			sb := b.AddBlock("switch c.Dict") //sb -> switch block
 			for _, f := range itf.Functions {
 				cb := sb.AddBlock("case dict.EDict_rip_%s_%s_%s_Prm:", itf.Package, itf.Name, f.Name)
 				cb.Imports("rip_" + itf.Package)
+				cb.WriteLine("_d = dict.EDict_rip_%s_%s_%s_Ret", itf.Package, itf.Name, f.Name)
 				cb.WriteLine("msg := m.(*rip_%s.%s_%s_Prm)", itf.Package, itf.Name, f.Name)
 				rets := ""
 				for i := 0; i < len(f.Returns); i++ {
@@ -120,8 +130,7 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 					cb.Write(pv)
 				}
 				cb.Write(")\n")
-
-				cb.WriteToNewLine("return dict.EDict_rip_%s_%s_%s_Ret, &rip_%s.%s_%s_Ret{", itf.Package, itf.Name, f.Name, itf.Package, itf.Name, f.Name)
+				cb.WriteToNewLine("return _d, &rip_%s.%s_%s_Ret{", itf.Package, itf.Name, f.Name)
 				for i, r := range f.Returns {
 					if i != 0 {
 						cb.Write(", ")
@@ -132,9 +141,9 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 					}
 					cb.Write("%s:%s", smn_str.InitialsUpper(r.Var), pv)
 				}
-				cb.WriteLine("}")
+				cb.WriteLine("}, nil")
 			}
-			b.WriteLine("return -1, nil")
+			b.WriteLine("return -1, nil, nil")
 		}
 
 		gof.Output()
@@ -202,9 +211,10 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 				}
 				b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, resList)
 				b.WriteLine("msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
-				b.WriteLine("this.conn.WriteMessage(dict.EDict_rip_%s_%s_%s_Prm, msg)", itf.Package, itf.Name, f.Name)
-				b.WriteLine("rm, err := this.conn.ReadMessage()")
+				b.WriteLine("this.conn.WriteCall(dict.EDict_rip_%s_%s_%s_Prm, msg)", itf.Package, itf.Name, f.Name)
+				b.WriteLine("rm, err := this.conn.ReadRet()")
 				b.WriteLine("if err != nil{\n\tpanic(err)\n}")
+				b.WriteLine("if rm.Err{\n\tpanic(string(rm.Msg))\n}")
 				b.WriteLine("res := &rip_%s.%s_%s_Ret{}", itf.Package, itf.Name, f.Name)
 				b.WriteLine("err = proto.Unmarshal(rm.Msg, res)")
 				b.WriteLine("if err != nil{\n\tpanic(err)\n}")

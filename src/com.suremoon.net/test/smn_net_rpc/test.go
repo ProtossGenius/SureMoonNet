@@ -4,7 +4,6 @@ import (
 	"com.suremoon.net/basis/smn_net"
 	"fmt"
 	"net"
-	"pb/base"
 	"rpc_nitf/clientrpc"
 	"rpc_nitf/svrrpc"
 	"time"
@@ -19,7 +18,7 @@ func check(err error) {
 type login struct {
 }
 
-func (this *login) DoLogin(user, pswd string, code int, call *base.Call) (bool, int) {
+func (this *login) DoLogin(user, pswd string, code int) (bool, int) {
 	fmt.Println(user, pswd, code)
 	return false, 0
 }
@@ -31,10 +30,10 @@ func (this *login) Test1(a []string, b []int, c []uint, d []uint64, e []int32) [
 func AccpterRun(adapter smn_net.MessageAdapterItf) {
 	rpcSvr := svr_rpc_rpc_itf.NewSvrRpcLogin(&login{})
 	for {
-		msg, err := adapter.ReadMessage()
+		msg, err := adapter.ReadCall()
 		check(err)
-		dict, res := rpcSvr.OnMessage(msg)
-		adapter.WriteMessage(dict, res)
+		dict, res, err := rpcSvr.OnMessage(msg)
+		adapter.WriteRet(dict, res, err)
 	}
 }
 

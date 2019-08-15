@@ -40,8 +40,11 @@ func (this *TcpServer) Run() {
 }
 
 type MessageAdapterItf interface {
-	WriteMessage(dict dict.EDict, message proto.Message) (int, error)
-	ReadMessage() (*base.Call, error)
+	WriteCall(dict dict.EDict, message proto.Message) (int, error)
+	WriteRet(dict dict.EDict, message proto.Message, err error) (int, error)
+	ReadCall() (*base.Call, error)
+	ReadRet() (*base.Ret, error)
+	Close() error
 }
 
 type MessageAdapter struct {
@@ -52,7 +55,11 @@ func NewMessageAdapter(conn net.Conn) MessageAdapterItf {
 	return &MessageAdapter{c: conn}
 }
 
-func (this *MessageAdapter) WriteMessage(dict dict.EDict, message proto.Message) (int, error) {
+func (this *MessageAdapter) Close() error {
+	return this.c.Close()
+}
+
+func (this *MessageAdapter) WriteCall(dict dict.EDict, message proto.Message) (int, error) {
 	bytes, err := proto.Marshal(message)
 	if iserr(err) {
 		return 0, err
@@ -66,7 +73,30 @@ func (this *MessageAdapter) WriteMessage(dict dict.EDict, message proto.Message)
 	return this.c.Write(bytes)
 }
 
-func (this *MessageAdapter) ReadMessage() (*base.Call, error) {
+func (this *MessageAdapter) WriteRet(dict dict.EDict, message proto.Message, err error) (int, error) {
+	bytes := make([]byte, 0)
+	ret := &base.Ret{Dict: dict, Err: false}
+	if err != nil {
+		ret.Err = true
+		bytes = []byte(err.Error())
+	} else {
+		var e error
+		bytes, e = proto.Marshal(message)
+		if e != nil {
+			ret.Err = true
+			bytes = []byte(e.Error())
+		}
+	}
+	ret.Msg = bytes
+	bytes, err = proto.Marshal(ret)
+	err = WriteInt(len(bytes), this.c)
+	if iserr(err) {
+		return 0, err
+	}
+	return this.c.Write(bytes)
+}
+
+func (this *MessageAdapter) ReadCall() (*base.Call, error) {
 	len, err := ReadInt(this.c)
 	if iserr(err) {
 		return nil, err
@@ -81,5 +111,23 @@ func (this *MessageAdapter) ReadMessage() (*base.Call, error) {
 	}
 	msg := &base.Call{}
 	proto.Unmarshal(bytes, msg)
+	return msg, err
+}
+
+func (this *MessageAdapter) ReadRet() (*base.Ret, error) {
+	len, err := ReadInt(this.c)
+	if iserr(err) {
+		return nil, err
+	}
+	bytes := make([]byte, len)
+	rl, err := this.c.Read(bytes)
+	if err != nil {
+		return nil, err
+	}
+	if rl != len {
+		return nil, fmt.Errorf(ErrNotGetEnoughLengthBytes, len, rl)
+	}
+	msg := &base.Ret{}
+	err = proto.Unmarshal(bytes, msg)
 	return msg, err
 }

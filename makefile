@@ -8,7 +8,7 @@ c_itf2proto:
 	go build -o ./bin/itf2proto.exe ./src/com.suremoon.net/main/proto_tool/proto_itf/to_proto/ItfToProto.go
 	
 c_itf2rpc:
-	go build -o ./bin/itf2rpc.exe ./src/com.suremoon.net/main/proto_tool/proto_lange/go/itf_to_rpc.go
+	go build -o ./bin/itf2rpc.exe ./src/com.suremoon.net/main/proto_tool/proto_lang/go/itf_to_rpc.go
 	
 itf2proto: c_itf2proto
 	"./bin/itf2proto.exe" -i "./src/rpc_itf/" -o ./datas/proto/
@@ -19,8 +19,9 @@ itf2rpc:c_itf2rpc
 proto_compile: c_proto_compile
 	"./bin/proto_compile.exe" -i ./datas/proto/ -o ./src/pb/
 	
-go_protoread: itf2proto c_proto_read proto_compile
+go_protoread: itf2rpc itf2proto c_proto_read proto_compile
 	"./bin/proto_read.exe" -proto "./datas/proto/" -pkgh "pb/" -o "./src/pbr/read.go"
+
 
 getlines:
 	go build -o ./bin/getlines.exe ./src/com.suremoon.net/main/get-project-lines/get-pro-lines.go 

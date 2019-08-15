@@ -9,4 +9,5 @@ enum EDict{
 	rip_rpc_itf_Login_Test1_Ret = 3;
 	rip_rpc_itf_Login_DoLogin_Prm = 4;
 	rip_rpc_itf_Login_Test1_Prm = 5;
+	base_Ret = 6;
 }

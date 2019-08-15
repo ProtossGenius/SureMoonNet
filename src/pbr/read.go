@@ -13,6 +13,7 @@ var funcList = []funcGetMsg {
     dict.EDict_rip_rpc_itf_Login_Test1_Ret:rip_rpc_itf_Login_Test1_Ret,
     dict.EDict_rip_rpc_itf_Login_DoLogin_Prm:rip_rpc_itf_Login_DoLogin_Prm,
     dict.EDict_rip_rpc_itf_Login_Test1_Prm:rip_rpc_itf_Login_Test1_Prm,
+    dict.EDict_base_Ret:base_Ret,
 }
 func base_Call(bytes []byte) proto.Message {
     msg := &base.Call{}
@@ -36,6 +37,11 @@ func rip_rpc_itf_Login_DoLogin_Prm(bytes []byte) proto.Message {
 }
 func rip_rpc_itf_Login_Test1_Prm(bytes []byte) proto.Message {
     msg := &rip_rpc_itf.Login_Test1_Prm{}
+    proto.Unmarshal(bytes, msg)
+    return msg
+}
+func base_Ret(bytes []byte) proto.Message {
+    msg := &base.Ret{}
     proto.Unmarshal(bytes, msg)
     return msg
 }

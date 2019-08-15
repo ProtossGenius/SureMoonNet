@@ -8,3 +8,9 @@ message Call{
     dict.EDict dict = 1;
     bytes msg = 2;
 }
+
+message Ret{
+    dict.EDict dict = 1;
+    bool  Err = 2;
+    bytes msg = 3;
+}

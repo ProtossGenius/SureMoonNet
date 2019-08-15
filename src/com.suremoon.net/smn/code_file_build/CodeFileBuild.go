@@ -106,6 +106,10 @@ func (this *GoBlock) Imports(imports ...string) {
 	}
 }
 
+func (this *GoBlock) IndentationAdd(n int) {
+	this.indentation += n
+}
+
 func (this *GoBlock) _addIndentation(str string, corr int) string {
 	space := ""
 	for i := 0; i < this.indentation+corr; i++ {
