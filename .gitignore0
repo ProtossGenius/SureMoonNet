@@ -1,0 +1,7 @@
+##git ignore file ##
+.idea/
+pkg/
+bin/
+src/pb/
+src/rpc_nitf/
+
