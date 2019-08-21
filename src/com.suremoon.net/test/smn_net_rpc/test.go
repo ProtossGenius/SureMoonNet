@@ -53,6 +53,12 @@ func RunSvr() {
 }
 
 func main() {
+	defer func() {
+		err := recover()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 	go RunSvr()
 	time.Sleep(1 * time.Second)
 	conn, err := net.Dial("tcp", "127.0.0.1:1000")

@@ -44,3 +44,8 @@ func DeepTraversalDir(path string, fileDo FileDoFunc) (info os.FileInfo, err err
 	}
 	return
 }
+
+func Pwd() string {
+	dir, _ := filepath.Abs(".")
+	return dir
+}

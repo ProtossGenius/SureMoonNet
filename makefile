@@ -19,7 +19,7 @@ itf2rpc:c_itf2rpc
 proto_compile: c_proto_compile
 	"./bin/proto_compile.exe" -i ./datas/proto/ -o ./src/pb/
 	
-go_protoread: itf2rpc itf2proto c_proto_read proto_compile
+go_protoread: itf2proto itf2rpc c_proto_read proto_compile
 	"./bin/proto_read.exe" -proto "./datas/proto/" -pkgh "pb/" -o "./src/pbr/read.go"
 
 
@@ -30,3 +30,12 @@ getlines:
 importpkg:
 	go get -u  github.com/json-iterator/go
 	go get -u  github.com/robertkrimen/otto
+	go get -u github.com/golang/protobuf/protoc-gen-go
+
+clean:
+	rm -f bin/*.exe
+	rm -rf src/pb
+	rm -rf src/rpc_nitf
+
+test:
+	go run ./src/com.suremoon.net/test/smn_net_rpc/test.go
