@@ -19,7 +19,7 @@ itf2rpc:c_itf2rpc
 proto_compile: c_proto_compile
 	"./bin/proto_compile.exe" -i ./datas/proto/ -o ./src/pb/
 	
-go_protoread: itf2proto itf2rpc c_proto_read proto_compile
+go_protoread: itf2proto proto_compile itf2rpc c_proto_read
 	"./bin/proto_read.exe" -proto "./datas/proto/" -pkgh "pb/" -o "./src/pbr/read.go"
 
 

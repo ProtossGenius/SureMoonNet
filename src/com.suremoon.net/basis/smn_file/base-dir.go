@@ -3,6 +3,7 @@ package smn_file
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 /*

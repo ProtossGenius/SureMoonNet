@@ -49,6 +49,8 @@ func main() {
 	p := flag.String("p", "protoc", "protoc's path")
 	o := flag.String("o", "./src/pb/", "output path")
 	i := flag.String("i", "./datas/proto/", "input dir path.")
+	err := os.MkdirAll(*o, os.ModePerm)
+	checkerr(err)
 	flag.Parse()
 	dict(*i)
 	smn_file.DeepTraversalDir(*i, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
