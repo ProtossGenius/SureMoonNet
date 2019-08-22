@@ -19,7 +19,7 @@ itf2rpc:c_itf2rpc
 proto_compile: c_proto_compile
 	"./bin/proto_compile.exe" -i ./datas/proto/ -o ./src/pb/
 	
-go_protoread: itf2proto proto_compile itf2rpc c_proto_read
+go_protoread: c_proto_read
 	"./bin/proto_read.exe" -proto "./datas/proto/" -pkgh "pb/" -o "./src/pbr/read.go"
 
 
@@ -36,6 +36,6 @@ clean:
 	rm -f bin/*.exe
 	rm -rf src/pb
 	rm -rf src/rpc_nitf
-
-test:
+	rm -rf src/pbr
+test: itf2proto go_protoread proto_compile itf2rpc
 	go run ./src/com.suremoon.net/test/smn_net_rpc/test.go
