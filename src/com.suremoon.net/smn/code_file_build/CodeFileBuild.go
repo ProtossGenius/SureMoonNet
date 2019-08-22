@@ -16,15 +16,33 @@ const (
 	ErrRepeatParse = "ErrRepeatParse"
 )
 
-type GoFile struct {
+//pkg is package name. for C/C++ is include file name.
+//result is all include(import) line
+//e.g. In C++: pkg = "cstdio" , out is "#include<cstdio>"
+type CFBImpFunc func(pkg string) string
+
+func CppImp(pkg string) string {
+	return "#include <" + pkg + ">"
+}
+
+func GoImp(pkg string) string {
+	return "import \"" + pkg + "\""
+}
+
+func JavaImp(pkg string) string {
+	return "import " + pkg + ";"
+}
+
+type CodeFile struct {
 	smn_muti_write_cache.FileMutiWriteCacheItf
 	importable map[string]string
 	imported   map[string]bool
+	importFunc CFBImpFunc
 	writer     io.Writer
 }
 
-func NewGoFile(pkg string, w io.Writer, comments ...string) *GoFile {
-	res := &GoFile{FileMutiWriteCacheItf: smn_muti_write_cache.NewFileMutiWriteCache(), importable: make(map[string]string), imported: make(map[string]bool), writer: w}
+func NewCodeFile(pkg string, w io.Writer, f CFBImpFunc, comments ...string) *CodeFile {
+	res := &CodeFile{FileMutiWriteCacheItf: smn_muti_write_cache.NewFileMutiWriteCache(), importable: make(map[string]string), imported: make(map[string]bool), writer: w, importFunc: f}
 	res.WriteHeadLine("package " + pkg)
 	res.WriteHeadLine("")
 	for _, comment := range comments {
@@ -37,21 +55,21 @@ func NewGoFile(pkg string, w io.Writer, comments ...string) *GoFile {
 	return res
 }
 
-func (this *GoFile) AddImports(imp map[string]string) {
+func (this *CodeFile) AddImports(imp map[string]string) {
 	for k, v := range imp {
 		this.importable[k] = v
 	}
 }
 
-func (this *GoFile) _import(pkg string) {
+func (this *CodeFile) _import(pkg string) {
 	if this.imported[pkg] {
 		return
 	}
 	this.imported[pkg] = true
-	this.WriteHeadLine("import \"" + pkg + "\"")
+	this.WriteHeadLine(this.importFunc(pkg))
 }
 
-func (this *GoFile) Import(str string) bool {
+func (this *CodeFile) Import(str string) bool {
 	if val, ok := this.importable[str]; ok {
 		this._import(val)
 		return true
@@ -60,37 +78,37 @@ func (this *GoFile) Import(str string) bool {
 	return false
 }
 
-func (this *GoFile) Imports(imps ...string) {
+func (this *CodeFile) Imports(imps ...string) {
 	for _, val := range imps {
 		this.Import(val)
 	}
 }
 
-func (this *GoFile) Write(str string) {
+func (this *CodeFile) Write(str string) {
 	this.Append(smn_muti_write_cache.NewStrCache(str))
 }
-func (this *GoFile) WriteLine(str string) {
+func (this *CodeFile) WriteLine(str string) {
 	this.Write(str + "\n")
 }
 
-func (this *GoFile) AddBlock(format string, a ...interface{}) *GoBlock {
-	f := newGoBlock(fmt.Sprintf(format, a...), this, 0)
+func (this *CodeFile) AddBlock(format string, a ...interface{}) *CodeBlock {
+	f := newCodeBlock(fmt.Sprintf(format, a...), this, 0)
 	this.Append(f)
 	return f
 }
 
-func (this *GoFile) Output() (int, error) {
+func (this *CodeFile) Output() (int, error) {
 	return this.FileMutiWriteCacheItf.Output(this.writer)
 }
 
-type GoBlock struct {
+type CodeBlock struct {
 	smn_muti_write_cache.FileMutiWriteCacheItf
-	father      *GoFile
+	father      *CodeFile
 	indentation int
 }
 
-func newGoBlock(def string, fathre *GoFile, ind int) *GoBlock {
-	res := &GoBlock{FileMutiWriteCacheItf: smn_muti_write_cache.NewFileMutiWriteCache(), father: fathre, indentation: ind}
+func newCodeBlock(def string, fathre *CodeFile, ind int) *CodeBlock {
+	res := &CodeBlock{FileMutiWriteCacheItf: smn_muti_write_cache.NewFileMutiWriteCache(), father: fathre, indentation: ind}
 	suf := " {"
 	if strings.Contains(def, "{") {
 		suf = ""
@@ -100,17 +118,17 @@ func newGoBlock(def string, fathre *GoFile, ind int) *GoBlock {
 	return res
 }
 
-func (this *GoBlock) Imports(imports ...string) {
+func (this *CodeBlock) Imports(imports ...string) {
 	for _, imp := range imports {
 		this.father.Import(imp)
 	}
 }
 
-func (this *GoBlock) IndentationAdd(n int) {
+func (this *CodeBlock) IndentationAdd(n int) {
 	this.indentation += n
 }
 
-func (this *GoBlock) _addIndentation(str string, corr int) string {
+func (this *CodeBlock) _addIndentation(str string, corr int) string {
 	space := ""
 	for i := 0; i < this.indentation+corr; i++ {
 		space += "    "
@@ -119,24 +137,29 @@ func (this *GoBlock) _addIndentation(str string, corr int) string {
 	return strings.TrimRight(space+str, " ")
 }
 
-func (this *GoBlock) Write(format string, a ...interface{}) {
+func (this *CodeBlock) Write(format string, a ...interface{}) {
 	str := fmt.Sprintf(format, a...)
 	this.Append(smn_muti_write_cache.NewStrCache(str))
 }
 
-func (this *GoBlock) WriteToNewLine(format string, a ...interface{}) {
+func (this *CodeBlock) WriteToNewLine(format string, a ...interface{}) {
 	str := fmt.Sprintf(format, a...)
 	this.Append(smn_muti_write_cache.NewStrCache(this._addIndentation(str, 1)))
 }
 
-func (this *GoBlock) WriteLine(format string, a ...interface{}) {
+func (this *CodeBlock) WriteLine(format string, a ...interface{}) {
 	this.WriteToNewLine(format+"\n", a...)
 }
 
-func (this *GoBlock) AddBlock(format string, a ...interface{}) *GoBlock {
-	f := newGoBlock(fmt.Sprintf(format, a...), this.father, this.indentation+1)
+func (this *CodeBlock) AddBlock(format string, a ...interface{}) *CodeBlock {
+	f := newCodeBlock(fmt.Sprintf(format, a...), this.father, this.indentation+1)
 	this.Append(f)
 	return f
+}
+
+//In order to be compatible with the previous code.
+func NewGoFile(pkg string, w io.Writer, comments ...string) *CodeFile {
+	return NewCodeFile(pkg, w, GoImp, comments...)
 }
 
 func LocalImportable(path string) map[string]string {
