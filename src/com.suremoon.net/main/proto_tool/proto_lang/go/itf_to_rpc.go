@@ -1,15 +1,16 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+	"os"
+	"strings"
+
 	"com.suremoon.net/basis/smn_file"
 	"com.suremoon.net/basis/smn_pglang"
 	"com.suremoon.net/basis/smn_str"
 	"com.suremoon.net/smn/analysis/smn_rpc_itf"
 	"com.suremoon.net/smn/code_file_build"
-	"flag"
-	"fmt"
-	"os"
-	"strings"
 )
 
 func check(err error) {
@@ -24,7 +25,7 @@ import(...)
 
 */
 
-func i64toi(ot, v string) (string, bool) {
+func goi64toi(ot, v string) (string, bool) {
 	isArr, typ := smn_str.ProtoUseDeal(ot)
 	if !strings.Contains(ot, typ) {
 		if !isArr {
@@ -41,11 +42,11 @@ func i64toi(ot, v string) (string, bool) {
 			}
 		}
 	} else {
-		return fmt.Sprintf("%s", v), false
+		return v, false
 	}
 }
 
-func itoi64(ot, v string) (string, bool) {
+func goitoi64(ot, v string) (string, bool) {
 	isArr, typ := smn_str.ProtoUseDeal(ot)
 	if !strings.Contains(ot, typ) {
 		if !isArr {
@@ -62,7 +63,7 @@ func itoi64(ot, v string) (string, bool) {
 			}
 		}
 	} else {
-		return fmt.Sprintf("%s", v), false
+		return v, false
 	}
 }
 
@@ -92,9 +93,10 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 			b.WriteLine("return this.dicts")
 		}
 		{ // struct get net-package
-			b := gof.AddBlock("func (this *SvrRpc%s)OnMessage(c *base.Call) (_d dict.EDict, _p proto.Message, _e error)", itf.Name)
+			b := gof.AddBlock("func (this *SvrRpc%s)OnMessage(c *base.Call, conn net.Conn) (_d dict.EDict, _p proto.Message, _e error)", itf.Name)
 			b.Imports("base")
 			b.Imports("smn_pbr")
+			b.Imports("net")
 			{ // rb = recover func
 				b.WriteLine("defer func() {")
 				ib := b.AddBlock("if err := recover(); err != nil {")
@@ -123,11 +125,15 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 					if i != 0 {
 						cb.Write(", ")
 					}
-					pv, usmn := i64toi(r.Type, "msg."+smn_str.InitialsUpper(r.Var))
-					if usmn {
-						cb.Imports("smn_net")
+					if strings.TrimSpace(r.Type) != "net.Conn" {
+						pv, usmn := goi64toi(r.Type, "msg."+smn_str.InitialsUpper(r.Var))
+						if usmn {
+							cb.Imports("smn_net")
+						}
+						cb.Write(pv)
+					} else {
+						cb.Write("conn")
 					}
-					cb.Write(pv)
 				}
 				cb.Write(")\n")
 				cb.WriteToNewLine("return _d, &rip_%s.%s_%s_Ret{", itf.Package, itf.Name, f.Name)
@@ -135,7 +141,7 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 					if i != 0 {
 						cb.Write(", ")
 					}
-					pv, usmn := itoi64(r.Type, fmt.Sprintf("p%d", i))
+					pv, usmn := goitoi64(r.Type, fmt.Sprintf("p%d", i))
 					if usmn {
 						cb.Imports("smn_net")
 					}
@@ -160,6 +166,9 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 		gof.Imports("rip_" + itf.Package)
 		tryImport := func(typ string) {
 			_, typ = smn_str.ProtoUseDeal(typ)
+			if typ == "net.Conn" {
+				return
+			}
 			lst := strings.Split(typ, ".")
 			if len(lst) != 1 {
 				gof.Imports(lst[0])
@@ -183,18 +192,35 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 				resList := ""
 				rpcPrms := ""
 				rpcRes := ""
+				connFunc := ""
+				haveConn := false
 				for i, prm := range f.Params {
 					tryImport(prm.Type)
+					isConn := strings.TrimSpace(prm.Type) == "net.Conn"
+					if isConn {
+						haveConn = true
+					}
 					if i != 0 {
 						prmList += ", "
-						rpcPrms += ", "
+						if !isConn {
+							rpcPrms += ", "
+						}
 					}
-					prmList += fmt.Sprintf("%s %s", prm.Var, prm.Type)
-					pv, usmn := itoi64(prm.Type, prm.Var)
-					rpcPrms += fmt.Sprintf("%s:%s", smn_str.InitialsUpper(prm.Var), pv)
-					if usmn {
-						gof.Imports("smn_net")
+					if !isConn {
+						prmList += fmt.Sprintf("%s %s", prm.Var, prm.Type)
+					} else {
+						prmList += fmt.Sprintf("%s %s", prm.Var, "smn_net.ConnFunc")
+						connFunc = prm.Var
+						gof.Import("smn_net")
 					}
+					if !isConn {
+						pv, usmn := goitoi64(prm.Type, prm.Var)
+						rpcPrms += fmt.Sprintf("%s:%s", smn_str.InitialsUpper(prm.Var), pv)
+						if usmn {
+							gof.Imports("smn_net")
+						}
+					}
+
 				}
 				for i, rp := range f.Returns {
 					tryImport(rp.Type)
@@ -203,7 +229,7 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 						rpcRes += ", "
 					}
 					resList += rp.Type
-					pv, usmn := i64toi(rp.Type, "res."+smn_str.InitialsUpper(rp.Var))
+					pv, usmn := goi64toi(rp.Type, "res."+smn_str.InitialsUpper(rp.Var))
 					rpcRes += pv
 					if usmn {
 						gof.Imports("smn_net")
@@ -212,6 +238,9 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 				b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, resList)
 				b.WriteLine("msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
 				b.WriteLine("this.conn.WriteCall(dict.EDict_rip_%s_%s_%s_Prm, msg)", itf.Package, itf.Name, f.Name)
+				if haveConn {
+					b.WriteLine("%s(this.conn.GetConn())", connFunc)
+				}
 				b.WriteLine("rm, err := this.conn.ReadRet()")
 				b.WriteLine("if err != nil{\n\tpanic(err)\n}")
 				b.WriteLine("if rm.Err{\n\tpanic(string(rm.Msg))\n}")

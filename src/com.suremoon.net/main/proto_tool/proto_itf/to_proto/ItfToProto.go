@@ -1,16 +1,17 @@
 package main
 
 import (
-	"com.suremoon.net/basis/smn_file"
-	"com.suremoon.net/basis/smn_muti_write_cache"
-	"com.suremoon.net/basis/smn_pglang"
-	"com.suremoon.net/basis/smn_str"
-	"com.suremoon.net/smn/analysis/smn_rpc_itf"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+
+	"com.suremoon.net/basis/smn_file"
+	"com.suremoon.net/basis/smn_muti_write_cache"
+	"com.suremoon.net/basis/smn_pglang"
+	"com.suremoon.net/basis/smn_str"
+	"com.suremoon.net/smn/analysis/smn_rpc_itf"
 )
 
 func checkerr(err error) {
@@ -31,6 +32,9 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 	impts := smn_muti_write_cache.NewStrCache()
 	impMap := make(map[string]bool)
 	checkImport := func(typ string) {
+		if typ == "net.Conn" {
+			return
+		}
 		list := strings.Split(typ, ".")
 		if len(list) == 1 {
 			return
@@ -50,6 +54,9 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 			writeLine("message %s_%s_Prm {", itf.Name, mtd.Name)
 			for i, prm := range mtd.Params {
 				isArray, typ := smn_str.ProtoUseDeal(prm.Type)
+				if typ == "net.Conn" {
+					continue
+				}
 				checkImport(typ)
 				rpt := ""
 				if isArray {

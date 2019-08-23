@@ -2,12 +2,14 @@ package smn_net
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"net"
 	"pb/base"
 	"pb/dict"
+
+	"github.com/golang/protobuf/proto"
 )
 
+type ConnFunc func(conn net.Conn)
 type TcpServer struct {
 	Port       int
 	Listener   net.Listener
@@ -44,6 +46,7 @@ type MessageAdapterItf interface {
 	WriteRet(dict dict.EDict, message proto.Message, err error) (int, error)
 	ReadCall() (*base.Call, error)
 	ReadRet() (*base.Ret, error)
+	GetConn() net.Conn
 	Close() error
 }
 
@@ -58,7 +61,9 @@ func NewMessageAdapter(conn net.Conn) MessageAdapterItf {
 func (this *MessageAdapter) Close() error {
 	return this.c.Close()
 }
-
+func (this *MessageAdapter) GetConn() net.Conn {
+	return this.c
+}
 func (this *MessageAdapter) WriteCall(dict dict.EDict, message proto.Message) (int, error) {
 	bytes, err := proto.Marshal(message)
 	if iserr(err) {

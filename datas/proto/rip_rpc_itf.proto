@@ -20,3 +20,9 @@ message Login_Test1_Prm {
 message Login_Test1_Ret {
 	repeated int64 p0 = 1;
 }
+message Login_Test2_Prm {
+	string key = 1;
+}
+message Login_Test2_Ret {
+	bool p0 = 1;
+}

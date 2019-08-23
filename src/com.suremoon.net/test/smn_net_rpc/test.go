@@ -1,12 +1,14 @@
 package main
 
 import (
-	"com.suremoon.net/basis/smn_net"
 	"fmt"
 	"net"
-	"rpc_nitf/clientrpc"
-	"rpc_nitf/svrrpc"
+	"rpc_itf"
+	clt_rpc_rpc_itf "rpc_nitf/clientrpc"
+	svr_rpc_rpc_itf "rpc_nitf/svrrpc"
 	"time"
+
+	"com.suremoon.net/basis/smn_net"
 )
 
 func check(err error) {
@@ -16,6 +18,7 @@ func check(err error) {
 }
 
 type login struct {
+	rpc_itf.Login
 }
 
 func (this *login) DoLogin(user, pswd string, code int) (bool, int) {
@@ -26,13 +29,21 @@ func (this *login) DoLogin(user, pswd string, code int) (bool, int) {
 func (this *login) Test1(a []string, b []int, c []uint, d []uint64, e []int32) []int {
 	panic("implement me")
 }
-
+func (this *login) Test2(key string, c net.Conn) bool {
+	if key == "hello" {
+		smn_net.WriteString("world", c)
+		return true
+	} else {
+		smn_net.WriteString("where is hello?", c)
+		return false
+	}
+}
 func AccpterRun(adapter smn_net.MessageAdapterItf) {
 	rpcSvr := svr_rpc_rpc_itf.NewSvrRpcLogin(&login{})
 	for {
 		msg, err := adapter.ReadCall()
 		check(err)
-		dict, res, err := rpcSvr.OnMessage(msg)
+		dict, res, err := rpcSvr.OnMessage(msg, adapter.GetConn())
 		adapter.WriteRet(dict, res, err)
 	}
 }
@@ -66,5 +77,11 @@ func main() {
 	client := clt_rpc_rpc_itf.NewCltRpcLogin(smn_net.NewMessageAdapter(conn))
 	b, i := client.DoLogin("user---", "pswd_____", -1)
 	fmt.Println("cccccc   ", b, i)
+	t2f := func(c net.Conn) {
+		str, _ := smn_net.ReadString(c)
+		fmt.Printf("login.Test2 cFunc, stream val: %s", str)
+	}
+	fmt.Println(client.Test2("hello", t2f))
+	fmt.Println(client.Test2("helle", t2f))
 	client.Test1(nil, nil, nil, nil, nil)
 }
