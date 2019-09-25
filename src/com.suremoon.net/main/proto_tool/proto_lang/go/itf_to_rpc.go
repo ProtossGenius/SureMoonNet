@@ -36,9 +36,9 @@ func goi64toi(ot, v string) (string, bool) {
 			}
 		} else {
 			if typ[0] == 'i' {
-				return fmt.Sprintf("smn_net.Int64ArrToIntArr(%s)", v), true
+				return fmt.Sprintf("smn_rpc.Int64ArrToIntArr(%s)", v), true
 			} else {
-				return fmt.Sprintf("smn_net.UInt64ArrToUIntArr(%s)", v), true
+				return fmt.Sprintf("smn_rpc.UInt64ArrToUIntArr(%s)", v), true
 			}
 		}
 	} else {
@@ -57,9 +57,9 @@ func goitoi64(ot, v string) (string, bool) {
 			}
 		} else {
 			if typ[0] == 'i' {
-				return fmt.Sprintf("smn_net.IntArrToInt64Arr(%s)", v), true
+				return fmt.Sprintf("smn_rpc.IntArrToInt64Arr(%s)", v), true
 			} else {
-				return fmt.Sprintf("smn_net.UIntArrToUInt64Arr(%s)", v), true
+				return fmt.Sprintf("smn_rpc.UIntArrToUInt64Arr(%s)", v), true
 			}
 		}
 	} else {
@@ -128,7 +128,7 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 					if strings.TrimSpace(r.Type) != "net.Conn" {
 						pv, usmn := goi64toi(r.Type, "msg."+smn_str.InitialsUpper(r.Var))
 						if usmn {
-							cb.Imports("smn_net")
+							cb.Imports("smn_rpc")
 						}
 						cb.Write(pv)
 					} else {
@@ -143,7 +143,7 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 					}
 					pv, usmn := goitoi64(r.Type, fmt.Sprintf("p%d", i))
 					if usmn {
-						cb.Imports("smn_net")
+						cb.Imports("smn_rpc")
 					}
 					cb.Write("%s:%s", smn_str.InitialsUpper(r.Var), pv)
 				}
@@ -210,15 +210,15 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 					if !isConn {
 						prmList += fmt.Sprintf("%s %s", prm.Var, prm.Type)
 					} else {
-						prmList += fmt.Sprintf("%s %s", prm.Var, "smn_net.ConnFunc")
+						prmList += fmt.Sprintf("%s %s", prm.Var, "smn_rpc.ConnFunc")
 						connFunc = prm.Var
-						gof.Import("smn_net")
+						gof.Import("smn_rpc")
 					}
 					if !isConn {
 						pv, usmn := goitoi64(prm.Type, prm.Var)
 						rpcPrms += fmt.Sprintf("%s:%s", smn_str.InitialsUpper(prm.Var), pv)
 						if usmn {
-							gof.Imports("smn_net")
+							gof.Imports("smn_rpc")
 						}
 					}
 
@@ -233,7 +233,7 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 					pv, usmn := goi64toi(rp.Type, "res."+smn_str.InitialsUpper(rp.Var))
 					rpcRes += pv
 					if usmn {
-						gof.Imports("smn_net")
+						gof.Imports("smn_rpc")
 					}
 				}
 				b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, resList)

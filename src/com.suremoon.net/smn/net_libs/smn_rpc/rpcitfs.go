@@ -12,6 +12,7 @@ import (
 func iserr(err error) bool {
 	return err != nil
 }
+type ConnFunc func(conn net.Conn)
 
 type MessageAdapterItf interface {
 	WriteCall(dict dict.EDict, message proto.Message) (int, error)
@@ -107,4 +108,36 @@ func (this *MessageAdapter) ReadRet() (*base.Ret, error) {
 	msg := &base.Ret{}
 	err = proto.Unmarshal(bytes, msg)
 	return msg, err
+}
+
+func Int64ArrToIntArr(arr []int64) []int {
+	res := make([]int, 0, len(arr))
+	for _, i := range arr {
+		res = append(res, int(i))
+	}
+	return res
+}
+
+func IntArrToInt64Arr(arr []int) []int64 {
+	res := make([]int64, 0, len(arr))
+	for _, i := range arr {
+		res = append(res, int64(i))
+	}
+	return res
+}
+
+func UInt64ArrToUIntArr(arr []uint64) []uint {
+	res := make([]uint, 0, len(arr))
+	for _, i := range arr {
+		res = append(res, uint(i))
+	}
+	return res
+}
+
+func UIntArrToUInt64Arr(arr []uint) []uint64 {
+	res := make([]uint64, 0, len(arr))
+	for _, i := range arr {
+		res = append(res, uint64(i))
+	}
+	return res
 }

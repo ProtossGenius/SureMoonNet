@@ -5,7 +5,6 @@ import (
 	"net"
 )
 
-type ConnFunc func(conn net.Conn)
 type TcpServer struct {
 	Port       int
 	Listener   net.Listener
