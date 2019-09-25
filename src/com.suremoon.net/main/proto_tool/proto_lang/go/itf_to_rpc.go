@@ -178,12 +178,13 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 		{ // rpc struct
 			b := gof.AddBlock("type CltRpc%s struct", itf.Name)
 			b.WriteLine("%s.%s", itf.Package, itf.Name)
-			b.WriteLine("conn smn_net.MessageAdapterItf")
+			b.WriteLine("conn smn_rpc.MessageAdapterItf")
 			b.Imports("dict")
+			b.Imports("smn_rpc")
 		}
 		{ // new func
-			b := gof.AddBlock("func NewCltRpc%s(conn smn_net.MessageAdapterItf) *CltRpc%s", itf.Name, itf.Name)
-			b.Imports("smn_net")
+			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf) *CltRpc%s", itf.Name, itf.Name)
+			b.Imports("smn_rpc")
 			b.WriteLine("return &CltRpc%s{conn:conn}", itf.Name)
 		}
 		{ // interface achieve

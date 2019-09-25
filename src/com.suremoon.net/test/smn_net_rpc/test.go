@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"com.suremoon.net/basis/smn_net"
+	"com.suremoon.net/smn/net_libs/smn_rpc"
 )
 
 func check(err error) {
@@ -38,7 +39,7 @@ func (this *login) Test2(key string, c net.Conn) bool {
 		return false
 	}
 }
-func AccpterRun(adapter smn_net.MessageAdapterItf) {
+func AccpterRun(adapter smn_rpc.MessageAdapterItf) {
 	rpcSvr := svr_rpc_rpc_itf.NewSvrRpcLogin(&login{})
 	for {
 		msg, err := adapter.ReadCall()
@@ -51,7 +52,7 @@ func AccpterRun(adapter smn_net.MessageAdapterItf) {
 func accept(c chan net.Conn) {
 	for {
 		conn := <-c
-		adapter := smn_net.NewMessageAdapter(conn)
+		adapter := smn_rpc.NewMessageAdapter(conn)
 		go AccpterRun(adapter)
 	}
 }
@@ -74,7 +75,7 @@ func main() {
 	time.Sleep(1 * time.Second)
 	conn, err := net.Dial("tcp", "127.0.0.1:1000")
 	check(err)
-	client := clt_rpc_rpc_itf.NewCltRpcLogin(smn_net.NewMessageAdapter(conn))
+	client := clt_rpc_rpc_itf.NewCltRpcLogin(smn_rpc.NewMessageAdapter(conn))
 	b, i := client.DoLogin("user---", "pswd_____", -1)
 	fmt.Println("cccccc   ", b, i)
 	t2f := func(c net.Conn) {
