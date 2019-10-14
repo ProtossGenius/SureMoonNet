@@ -3,11 +3,12 @@ package smn_anlys_go_tif
 //for go to dll.
 
 import (
+	"fmt"
+	"strings"
+
 	"com.suremoon.net/basis/smn_file"
 	"com.suremoon.net/basis/smn_pglang"
 	"com.suremoon.net/basis/smn_str"
-	"fmt"
-	"strings"
 )
 
 func AnalysisTwoSplitTrim(str string) (string, string) {
@@ -15,6 +16,10 @@ func AnalysisTwoSplitTrim(str string) (string, string) {
 }
 
 func GetParamsFromStr(prms string) []*smn_pglang.VarDef {
+	prms = strings.TrimSpace(prms)
+	if prms == "" {
+		return make([]*smn_pglang.VarDef, 0)
+	}
 	prmList := strings.Split(prms, ",")
 	res := make([]*smn_pglang.VarDef, 0, len(prmList))
 	for _, str := range prmList {
