@@ -30,6 +30,7 @@ importpkg:
 	go get -u  github.com/json-iterator/go
 	go get -u  github.com/robertkrimen/otto
 	go get -u github.com/golang/protobuf/protoc-gen-go
+	go get -u github.com/xtaci/kcp-go
 
 clean:
 	rm -f bin/*.exe
