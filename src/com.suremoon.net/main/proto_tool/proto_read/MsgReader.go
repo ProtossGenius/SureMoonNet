@@ -1,12 +1,9 @@
 package main
 
 import (
-	"com.suremoon.net/basis/smn_file"
-	"com.suremoon.net/smn/analysis/proto_msg_map"
-	"com.suremoon.net/smn/code_file_build"
 	"flag"
-	"os"
-	"strings"
+	"com.suremoon.net/smn/proto_tool/proto_read_lang"
+	"fmt"
 )
 
 func checkerr(err error) {
@@ -15,46 +12,20 @@ func checkerr(err error) {
 	}
 }
 
+var ReaderMap = map[string]proto_read_lang.MsgReader{
+	"go": proto_read_lang.GoMsgReader,
+}
+
 func main() {
 	protoPath := flag.String("proto", "./datas/proto/", "proto file's path")
 	pkgHead := flag.String("pkgh", "pb/", "proto's pkg head")
 	o := flag.String("o", "./src/pbr/read.go", "out path.")
+	lang := flag.String("lang", "go", "output coding language.")
 	flag.Parse()
-	err := os.MkdirAll((*o)[:strings.LastIndex(*o, "/")], os.ModePerm)
-	checkerr(err)
-	file, err := smn_file.CreateNewFile(*o)
-	checkerr(err)
-	list, cnm, err := proto_msg_map.Dict(*protoPath)
-	checkerr(err)
-	fileWriter := code_file_build.NewGoFile("smn_pbr", file, "product by tools, should not change this file.", "Author: SureMoon", "")
-	fileWriter.AddImports(code_file_build.LocalImportable("./src"))
-	fileWriter.Import("github.com/golang/protobuf/proto")
-	fileWriter.Import("pb/dict")
-	funcList := fileWriter.AddBlock("var funcList = []funcGetMsg")
-	for _, pm := range list {
-		constName := pm.Name
-		if constName == "None" || strings.HasPrefix(constName, "//") {
-			continue
-		}
-		funcList.WriteLine("dict.EDict_%s:%s,", pm.Name, pm.Name)
-		f := fileWriter.AddBlock("func %s(bytes []byte) proto.Message {", constName)
-		clzName := cnm[constName]
-		f.Imports(*pkgHead + strings.Split(clzName, ".")[0])
-		f.WriteLine("msg := &%s{}", clzName)
-		f.WriteLine("proto.Unmarshal(bytes, msg)")
-		f.WriteLine("return msg")
+	f, ok := ReaderMap[*lang]
+	if !ok {
+		panic(fmt.Errorf("Error! not support language <%s>, you can contact us to achieve. ", *lang))
 	}
-	fileWriter.WriteLine("type funcGetMsg func(bytes []byte) proto.Message")
-
-	fileWriter.WriteLine(`func GetMsgByDict(bytes []byte, dict dict.EDict) proto.Message {
-	dictId := int(dict)
-	if dictId >= len(funcList) || dictId < 0 || funcList[dictId] == nil {
-		return nil
-	}
-	return funcList[dictId](bytes)
-}
-
-`)
-
-	fileWriter.Output()
+	err := f(*protoPath, *pkgHead, *o)
+	checkerr(err)
 }
