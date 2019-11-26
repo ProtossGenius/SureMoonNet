@@ -5,3 +5,4 @@ bin/
 src/pb/
 src/rpc_nitf/
 src/pbr/
+temp/

@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const comp = "--go_out=%s"
+var comp string
 
 func checkerr(err error) {
 	if err != nil {
@@ -49,9 +49,11 @@ func main() {
 	p := flag.String("p", "protoc", "protoc's path")
 	o := flag.String("o", "./src/pb/", "output path")
 	i := flag.String("i", "./datas/proto/", "input dir path.")
+	lang := flag.String("lang", "go", "output language, cpp/csharp/java/javanano/objc/python/ruby")
+	flag.Parse()
 	err := os.MkdirAll(*o, os.ModePerm)
 	checkerr(err)
-	flag.Parse()
+	comp = "--" + *lang + "_out=%s" //"--go_out=%s"
 	dict(*i)
 	smn_file.DeepTraversalDir(*i, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".proto") {
