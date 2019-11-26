@@ -18,14 +18,14 @@ func GoMsgReader(protoPath, pkgHead, o string) (err error) {
 	fileWriter := code_file_build.NewGoFile("smn_pbr", file, "product by tools, should not change this file.", "Author: SureMoon", "")
 	fileWriter.AddImports(code_file_build.LocalImportable("./src"))
 	fileWriter.Import("github.com/golang/protobuf/proto")
-	fileWriter.Import("pb/dict")
+	fileWriter.Import("pb/smn_dict")
 	funcList := fileWriter.AddBlock("var funcList = []funcGetMsg")
 	for _, pm := range list {
 		constName := pm.Name
 		if constName == "None" || strings.HasPrefix(constName, "//") {
 			continue
 		}
-		funcList.WriteLine("dict.EDict_%s:%s,", pm.Name, pm.Name)
+		funcList.WriteLine("smn_dict.EDict_%s:%s,", pm.Name, pm.Name)
 		f := fileWriter.AddBlock("func %s(bytes []byte) proto.Message {", constName)
 		clzName := cnm[constName]
 		f.Imports(pkgHead + strings.Split(clzName, ".")[0])
@@ -35,7 +35,7 @@ func GoMsgReader(protoPath, pkgHead, o string) (err error) {
 	}
 	fileWriter.WriteLine("type funcGetMsg func(bytes []byte) proto.Message")
 
-	fileWriter.WriteLine(`func GetMsgByDict(bytes []byte, dict dict.EDict) proto.Message {
+	fileWriter.WriteLine(`func GetMsgByDict(bytes []byte, dict smn_dict.EDict) proto.Message {
 	dictId := int(dict)
 	if dictId >= len(funcList) || dictId < 0 || funcList[dictId] == nil {
 		return nil

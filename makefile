@@ -23,8 +23,7 @@ go_protoread: c_proto_read
 	"./bin/proto_read.exe" -proto "./datas/proto/" -pkgh "pb/" -o "./src/pbr/read.go"
 
 getlines:
-	go build -o ./bin/getlines.exe ./src/com.suremoon.net/main/get-project-lines/get-pro-lines.go 
-	./bin/getlines.exe
+	go run ./src/com.suremoon.net/main/get-project-lines/get-pro-lines.go
 
 importpkg:
 	go get -u  github.com/json-iterator/go

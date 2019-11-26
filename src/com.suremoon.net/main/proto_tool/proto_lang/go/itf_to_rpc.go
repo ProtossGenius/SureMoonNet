@@ -77,24 +77,24 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 		{ // rpc struct
 			b := gof.AddBlock("type SvrRpc%s struct", itf.Name)
 			b.WriteLine("itf %s.%s", itf.Package, itf.Name)
-			b.WriteLine("dicts []dict.EDict")
-			b.Imports("dict")
+			b.WriteLine("dicts []smn_dict.EDict")
+			b.Imports("smn_dict")
 		}
 		{ // new func
 			b := gof.AddBlock("func NewSvrRpc%s(itf %s.%s) *SvrRpc%s", itf.Name, itf.Package, itf.Name, itf.Name)
-			b.WriteLine("list := make([]dict.EDict, 0)")
+			b.WriteLine("list := make([]smn_dict.EDict, 0)")
 			for _, f := range itf.Functions {
-				b.WriteLine("list = append(list, dict.EDict_rip_%s_%s_%s_Prm)", itf.Package, itf.Name, f.Name)
+				b.WriteLine("list = append(list, smn_dict.EDict_rip_%s_%s_%s_Prm)", itf.Package, itf.Name, f.Name)
 			}
 			b.WriteLine("return &SvrRpc%s{itf:itf, dicts:list}", itf.Name)
 		}
 		{ // used message dict
-			b := gof.AddBlock("func (this *SvrRpc%s)getEDictList() []dict.EDict", itf.Name)
+			b := gof.AddBlock("func (this *SvrRpc%s)getEDictList() []smn_dict.EDict", itf.Name)
 			b.WriteLine("return this.dicts")
 		}
 		{ // struct get net-package
-			b := gof.AddBlock("func (this *SvrRpc%s)OnMessage(c *base.Call, conn net.Conn) (_d dict.EDict, _p proto.Message, _e error)", itf.Name)
-			b.Imports("base")
+			b := gof.AddBlock("func (this *SvrRpc%s)OnMessage(c *smn_base.Call, conn net.Conn) (_d smn_dict.EDict, _p proto.Message, _e error)", itf.Name)
+			b.Imports("smn_base")
 			b.Imports("smn_pbr")
 			b.Imports("net")
 			{ // rb = recover func
@@ -109,9 +109,9 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 			b.WriteLine("m := smn_pbr.GetMsgByDict(c.Msg, c.Dict)")
 			sb := b.AddBlock("switch c.Dict") //sb -> switch block
 			for _, f := range itf.Functions {
-				cb := sb.AddBlock("case dict.EDict_rip_%s_%s_%s_Prm:", itf.Package, itf.Name, f.Name)
+				cb := sb.AddBlock("case smn_dict.EDict_rip_%s_%s_%s_Prm:", itf.Package, itf.Name, f.Name)
 				cb.Imports("rip_" + itf.Package)
-				cb.WriteLine("_d = dict.EDict_rip_%s_%s_%s_Ret", itf.Package, itf.Name, f.Name)
+				cb.WriteLine("_d = smn_dict.EDict_rip_%s_%s_%s_Ret", itf.Package, itf.Name, f.Name)
 				cb.WriteLine("msg := m.(*rip_%s.%s_%s_Prm)", itf.Package, itf.Name, f.Name)
 				rets := ""
 				for i := 0; i < len(f.Returns); i++ {
@@ -179,7 +179,7 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 			b := gof.AddBlock("type CltRpc%s struct", itf.Name)
 			b.WriteLine("%s.%s", itf.Package, itf.Name)
 			b.WriteLine("conn smn_rpc.MessageAdapterItf")
-			b.Imports("dict")
+			b.Imports("smn_dict")
 			b.Imports("smn_rpc")
 		}
 		{ // new func
@@ -238,7 +238,7 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 				}
 				b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, resList)
 				b.WriteLine("msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
-				b.WriteLine("this.conn.WriteCall(dict.EDict_rip_%s_%s_%s_Prm, msg)", itf.Package, itf.Name, f.Name)
+				b.WriteLine("this.conn.WriteCall(smn_dict.EDict_rip_%s_%s_%s_Prm, msg)", itf.Package, itf.Name, f.Name)
 				if haveConn {
 					b.WriteLine("%s(this.conn.GetConn())", connFunc)
 				}

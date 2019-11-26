@@ -1,16 +1,16 @@
 syntax = "proto3";
 
-package base;
+package smn_base;
 
-import "dict.proto";
+import "smn_dict.proto";
 
 message Call{
-    dict.EDict dict = 1;
+    smn_dict.EDict dict = 1;
     bytes msg = 2;
 }
 
 message Ret{
-    dict.EDict dict = 1;
+    smn_dict.EDict dict = 1;
     bool  Err = 2;
     bytes msg = 3;
 }
