@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"net"
 	"rpc_itf"
-	clt_rpc_rpc_itf "rpc_nitf/clientrpc"
-	svr_rpc_rpc_itf "rpc_nitf/svrrpc"
+	"rpc_nitf/clientrpc"
+	"rpc_nitf/svrrpc"
 	"time"
 
 	"com.suremoon.net/basis/smn_net"
 	"com.suremoon.net/smn/net_libs/smn_rpc"
+	"com.suremoon.net/smn/net_libs/muti_service"
 )
 
 func check(err error) {
@@ -50,14 +51,17 @@ func AccpterRun(adapter smn_rpc.MessageAdapterItf) {
 }
 
 func accept(conn net.Conn) {
-	adapter := smn_rpc.NewMessageAdapter(conn)
+	sm := muti_service.NewServiceManager(conn)
+	fc, _ := sm.Regitster(404, "login")
+	go sm.Work()
+	adapter := smn_rpc.NewMessageAdapter(fc)
 	go AccpterRun(adapter)
 }
 
 func RunSvr() {
 	svr, err := smn_net.NewTcpServer(1000, 100)
-	svr.OnAccept = accept
 	check(err)
+	svr.OnAccept = accept
 	svr.Run()
 }
 
@@ -72,7 +76,10 @@ func main() {
 	time.Sleep(1 * time.Second)
 	conn, err := net.Dial("tcp", "127.0.0.1:1000")
 	check(err)
-	client := clt_rpc_rpc_itf.NewCltRpcLogin(smn_rpc.NewMessageAdapter(conn))
+	sm := muti_service.NewServiceManager(conn)
+	fc, _ := sm.Regitster(404, "login")
+	go sm.Work()
+	client := clt_rpc_rpc_itf.NewCltRpcLogin(smn_rpc.NewMessageAdapter(fc))
 	b, i := client.DoLogin("user---", "pswd_____", -1)
 	fmt.Println("cccccc   ", b, i)
 	t2f := func(c net.Conn) {

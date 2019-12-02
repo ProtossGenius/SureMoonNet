@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"time"
-
 	"github.com/pkg/errors"
 	"github.com/xtaci/kcp-go"
+	"time"
 )
 
 func checkerr(err error) {
@@ -16,12 +15,13 @@ func checkerr(err error) {
 	}
 }
 
-func Svr() {
-	lis, err := kcp.ListenWithOptions(":10000", nil, 10, 3)
+func Svr(laddr string) {
+	lis, err := kcp.ListenWithOptions(laddr, nil, 10, 3)
 	checkerr(err)
 	for {
 		conn, e := lis.AcceptKCP()
 		checkerr(e)
+		fmt.Println(conn.RemoteAddr())
 		go func(conn net.Conn) {
 			var buff = make([]byte, 1024, 1024)
 			for {
@@ -40,11 +40,12 @@ func Svr() {
 }
 
 func main() {
-	go Svr()
+	go Svr(":10000")
 	clt, err := kcp.DialWithOptions("localhost:10000", nil, 10, 3)
 	checkerr(err)
 	clt.Write([]byte("hello!!!!!11111111111111111111111111"))
 	clt.Write([]byte("hello!!!!!2222222222222222222222222222222"))
-	fmt.Println(clt.RemoteAddr())
-	time.Sleep(10 * time.Second)
+	for {
+		time.Sleep(1 * time.Second)
+	}
 }
