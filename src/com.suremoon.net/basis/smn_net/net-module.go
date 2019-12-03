@@ -8,10 +8,6 @@ import (
 
 type OnAccept func(conn net.Conn)
 
-func DftAccept(conn net.Conn) {
-	panic("You Should Set AcceptFunc For smn_net.TcpServer")
-}
-
 type TcpServer struct {
 	Port      int
 	Listener  net.Listener

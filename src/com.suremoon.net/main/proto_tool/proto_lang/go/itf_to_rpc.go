@@ -179,8 +179,10 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 			b := gof.AddBlock("type CltRpc%s struct", itf.Name)
 			b.WriteLine("%s.%s", itf.Package, itf.Name)
 			b.WriteLine("conn smn_rpc.MessageAdapterItf")
+			b.WriteLine("lock sync.Mutex")
 			b.Imports("smn_dict")
 			b.Imports("smn_rpc")
+			b.Imports("sync")
 		}
 		{ // new func
 			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf) *CltRpc%s", itf.Name, itf.Name)
@@ -237,6 +239,8 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 					}
 				}
 				b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, resList)
+				b.WriteLine("this.lock.Lock()")
+				b.WriteLine("defer this.lock.Unlock()")
 				b.WriteLine("msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
 				b.WriteLine("this.conn.WriteCall(smn_dict.EDict_rip_%s_%s_%s_Prm, msg)", itf.Package, itf.Name, f.Name)
 				if haveConn {
