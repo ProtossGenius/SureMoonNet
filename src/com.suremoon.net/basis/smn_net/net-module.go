@@ -21,7 +21,7 @@ type TcpServer struct {
 	Data      interface{}
 }
 
-func NewTcpServer(port int, acceptSize int) (this *TcpServer, err error) {
+func NewTcpServer(port int, onAccept OnAccept) (this *TcpServer, err error) {
 	this = &TcpServer{Port: port, OnErr: smn_err.DftOnErr, OnAccept: DftAccept}
 	this.Listener, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
 	return

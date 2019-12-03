@@ -59,9 +59,8 @@ func accept(conn net.Conn) {
 }
 
 func RunSvr() {
-	svr, err := smn_net.NewTcpServer(1000, 100)
+	svr, err := smn_net.NewTcpServer(1000, accept)
 	check(err)
-	svr.OnAccept = accept
 	svr.Run()
 }
 
