@@ -22,7 +22,7 @@ type TcpServer struct {
 }
 
 func NewTcpServer(port int, onAccept OnAccept) (this *TcpServer, err error) {
-	this = &TcpServer{Port: port, OnErr: smn_err.DftOnErr, OnAccept: DftAccept}
+	this = &TcpServer{Port: port, OnErr: smn_err.DftOnErr, OnAccept: onAccept}
 	this.Listener, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
 	return
 }
