@@ -9,11 +9,18 @@ import (
 	"com.suremoon.net/basis/smn_err"
 	"time"
 	"sync"
+	"com.suremoon.net/basis/smn_stream"
 )
 
 const (
 	ErrServerNumNotExist = "ErrServerNumNotExist :[%d]"
 )
+
+type FConnFactory func(no int64, mgr *ServiceManager, desc string, localAddr, remoteAddr net.Addr) ForwardConnItf
+
+func newDftFConn(no int64, mgr *ServiceManager, desc string, localAddr, remoteAddr net.Addr) ForwardConnItf {
+	return &fConn{no: no, mgr: mgr, desc: desc, localAddr:localAddr, remoteAddr:remoteAddr, cache:smn_stream.NewByteCache(1000, 1 * time.Second)}
+}
 
 type ServiceManager struct {
 	OnErr    smn_err.OnErr
@@ -22,21 +29,22 @@ type ServiceManager struct {
 	sendChan chan *smn_base.FPkg
 	regMap   map[int64]ForwardConnItf //key always > 0
 	close    chan int
+	FConnFactory FConnFactory
 	mapLock  sync.Mutex //因为map操作并不频繁，所以不用计较锁的开销
 }
 
 func NewServiceManager(conn net.Conn) *ServiceManager {
-	return &ServiceManager{conn: conn, close: make(chan int, 1), regMap: make(map[int64]ForwardConnItf), sendChan: make(chan *smn_base.FPkg, 1024), OnErr: smn_err.DftOnErr, TimeOut: 1 * time.Second}
+	return &ServiceManager{conn: conn, close: make(chan int, 1), regMap: make(map[int64]ForwardConnItf), sendChan: make(chan *smn_base.FPkg, 1024), FConnFactory:newDftFConn, OnErr: smn_err.DftOnErr, TimeOut: 1 * time.Second}
 }
 
-func (this *ServiceManager) send(p *smn_base.FPkg) {
+func (this *ServiceManager) Send(p *smn_base.FPkg) {
 	this.sendChan <- p
 }
 
 func (this *ServiceManager) recv(p *smn_base.FPkg) {
 	conn, ok := this.GetFConn(p.NO)
 	if ok {
-		conn.recv(p.Msg)
+		conn.RecvFromSM(p.Msg)
 	} else {
 		this.OnErr(fmt.Errorf(ErrServerNumNotExist, p.NO))
 	}
@@ -48,7 +56,7 @@ func (this *ServiceManager) Regitster(no int64, desc string) (conn ForwardConnIt
 	if c, ok := this.regMap[no]; ok {
 		return c, true
 	}
-	conn = &fConn{no: no, mgr: this, desc: desc, conn: this.conn, recvChan: make(chan []byte, 1000), TimeOut: 1 * time.Second}
+	conn = this.FConnFactory(no, this, desc, this.conn.LocalAddr(), this.conn.RemoteAddr())
 	this.regMap[no] = conn
 	return conn, false
 }
@@ -125,69 +133,29 @@ func (this *ServiceManager) Close() {
 
 type ForwardConnItf interface {
 	net.Conn
-	send(msg []byte)
-	recv(msg []byte)
+	SendToSM(msg []byte)
+	RecvFromSM(msg []byte)
 	Desc()string
+	SetTimeOut(t time.Duration)
 }
 
 type fConn struct {
-	conn     net.Conn
+	localAddr net.Addr
+	remoteAddr net.Addr
 	no       int64
 	mgr      *ServiceManager
 	desc     string
-	recvChan chan []byte
-	last     []byte
-	readLock sync.Mutex
-	TimeOut  time.Duration // timeout should not be zero
+	cache    *smn_stream.ByteCache
 }
 
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	} else {
-		return b
-	}
-}
 
-//copy `size` byte from fConn.last to b[start:]
-func (this *fConn) readCopy(b []byte, start, size int) (copyLen int) {
-	copyLen = minInt(size, len(this.last))
-	pos := start
-	for i := 0; i < copyLen; i++ {
-		b[pos] = this.last[i]
-		pos++
-	}
-	this.last = this.last[copyLen:]
-	return
-}
 
 func (this *fConn) Read(b []byte) (n int, err error) {
-	this.readLock.Lock()
-	defer this.readLock.Unlock()
-	size := len(b)
-	acLen := 0
-	if this.TimeOut == 0{
-		this.TimeOut = 9 * time.Second
-	}
-	tout := time.Tick(this.TimeOut)
-	for size > 0 {
-		copyLen := this.readCopy(b, acLen, size)
-		acLen += copyLen
-		size -= copyLen
-		if size == 0 {
-			break
-		}
-		select {
-		case this.last = <-this.recvChan:
-		case <-tout:
-			return acLen, nil
-		}
-	}
-	return len(b), nil
+	return this.cache.Read(b)
 }
 
 func (this *fConn) Write(b []byte) (n int, err error) {
-	this.send(b)
+	this.SendToSM(b)
 	return 0, nil
 }
 
@@ -197,11 +165,11 @@ func (this *fConn) Close() error {
 }
 
 func (this *fConn) LocalAddr() net.Addr {
-	return this.conn.LocalAddr()
+	return this.localAddr
 }
 
 func (this *fConn) RemoteAddr() net.Addr {
-	return this.conn.RemoteAddr()
+	return this.remoteAddr
 }
 
 func (this *fConn) SetDeadline(t time.Time) error {
@@ -216,14 +184,18 @@ func (this *fConn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (this *fConn) send(msg []byte) {
-	this.mgr.send(&smn_base.FPkg{NO: this.no, Msg: msg})
+func (this *fConn) SendToSM(msg []byte) {
+	this.mgr.Send(&smn_base.FPkg{NO: this.no, Msg: msg})
 }
 
-func (this *fConn) recv(msg []byte) {
-	this.recvChan<-msg
+func (this *fConn) RecvFromSM(msg []byte) {
+	this.cache.Write(msg)
 }
 
 func (this *fConn) Desc() string {
 	return this.desc
+}
+
+func (this *fConn) SetTimeOut(t time.Duration){
+	this.cache.TimeOut = t
 }

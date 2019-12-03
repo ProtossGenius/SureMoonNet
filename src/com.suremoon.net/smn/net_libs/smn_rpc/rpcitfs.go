@@ -14,6 +14,10 @@ func iserr(err error) bool {
 }
 type ConnFunc func(conn net.Conn)
 
+type RpcSvrItf interface {
+	OnMessage(c *smn_base.Call, conn net.Conn) (_d smn_dict.EDict, _p proto.Message, _e error)
+}
+
 type MessageAdapterItf interface {
 	WriteCall(dict smn_dict.EDict, message proto.Message) (int, error)
 	WriteRet(dict smn_dict.EDict, message proto.Message, err error) (int, error)
@@ -37,21 +41,26 @@ func (this *MessageAdapter) Close() error {
 func (this *MessageAdapter) GetConn() net.Conn {
 	return this.c
 }
-func (this *MessageAdapter) WriteCall(dict smn_dict.EDict, message proto.Message) (int, error) {
-	bytes, err := proto.Marshal(message)
+
+func WriteCall(conn net.Conn, dict smn_dict.EDict, message proto.Message) (int, error) {
+	bts, err := proto.Marshal(message)
 	if iserr(err) {
 		return 0, err
 	}
-	msg := &smn_base.Call{Dict: dict, Msg: bytes}
-	bytes, err = proto.Marshal(msg)
-	err = smn_net.WriteInt(len(bytes), this.c)
+	msg := &smn_base.Call{Dict: dict, Msg: bts}
+	bts, err = proto.Marshal(msg)
+	err = smn_net.WriteInt(len(bts), conn)
 	if iserr(err) {
 		return 0, err
 	}
-	return this.c.Write(bytes)
+	return conn.Write(bts)
 }
 
-func (this *MessageAdapter) WriteRet(dict smn_dict.EDict, message proto.Message, err error) (int, error) {
+func (this *MessageAdapter) WriteCall(dict smn_dict.EDict, message proto.Message) (int, error) {
+	return WriteCall(this.c, dict, message)
+}
+
+func WriteRet(conn net.Conn, dict smn_dict.EDict, message proto.Message, err error) (int, error) {
 	bytes := make([]byte, 0)
 	ret := &smn_base.Ret{Dict: dict, Err: false}
 	if err != nil {
@@ -67,11 +76,15 @@ func (this *MessageAdapter) WriteRet(dict smn_dict.EDict, message proto.Message,
 	}
 	ret.Msg = bytes
 	bytes, err = proto.Marshal(ret)
-	err = smn_net.WriteInt(len(bytes), this.c)
+	err = smn_net.WriteInt(len(bytes), conn)
 	if iserr(err) {
 		return 0, err
 	}
-	return this.c.Write(bytes)
+	return conn.Write(bytes)
+}
+
+func (this *MessageAdapter) WriteRet(dict smn_dict.EDict, message proto.Message, err error) (int, error) {
+	return WriteRet(this.c, dict, message, err)
 }
 
 func (this *MessageAdapter) ReadCall() (*smn_base.Call, error) {
@@ -79,8 +92,8 @@ func (this *MessageAdapter) ReadCall() (*smn_base.Call, error) {
 	if iserr(err) {
 		return nil, err
 	}
-	bytes := make([]byte, len)
-	rl, err := this.c.Read(bytes)
+	bts := make([]byte, len)
+	rl, err := this.c.Read(bts)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +101,7 @@ func (this *MessageAdapter) ReadCall() (*smn_base.Call, error) {
 		return nil, fmt.Errorf(smn_net.ErrNotGetEnoughLengthBytes, len, rl)
 	}
 	msg := &smn_base.Call{}
-	proto.Unmarshal(bytes, msg)
+	proto.Unmarshal(bts, msg)
 	return msg, err
 }
 

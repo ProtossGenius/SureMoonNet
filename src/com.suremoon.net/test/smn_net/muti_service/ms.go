@@ -51,11 +51,9 @@ func AccpterRun(adapter smn_rpc.MessageAdapterItf) {
 }
 
 func accept(conn net.Conn) {
-	sm := muti_service.NewServiceManager(conn)
-	fc, _ := sm.Regitster(404, "login")
+	sm := smn_rpc.NewRPCServiceManager(conn)
+	smn_rpc.ServiceManagerRegister(sm, 404, "login", svr_rpc_rpc_itf.NewSvrRpcLogin(&login{}))
 	go sm.Work()
-	adapter := smn_rpc.NewMessageAdapter(fc)
-	go AccpterRun(adapter)
 }
 
 func RunSvr() {
