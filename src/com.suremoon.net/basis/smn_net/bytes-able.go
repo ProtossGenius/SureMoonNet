@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"bytes"
 )
 
 func ReadInt64(reader io.Reader) (int64, error) {
@@ -154,29 +155,39 @@ func WriteFloat32(val float32, writer io.Writer) error {
 	return binary.Write(writer, binary.BigEndian, val)
 }
 
-func ReadString(reader io.Reader) (string, error) {
+func ReadBytes(reader io.Reader) ([]byte, error) {
 	len, err := ReadInt32(reader)
 	if iserr(err) {
-		return "", err
+		return nil, err
 	}
 	bts := make([]byte, len)
 	n, err := reader.Read(bts)
 	if n < int(len) {
-		return "", fmt.Errorf(ErrNotGetEnoughLengthBytes, len, n)
+		return nil, fmt.Errorf(ErrNotGetEnoughLengthBytes, len, n)
 	}
 	if iserr(err) {
-		return "", err
+		return nil, err
 	}
-	return string(bts), nil
+	return bts, nil
 }
 
-func WriteString(val string, writer io.Writer) error {
-	bts := []byte(val)
+func ReadString(reader io.Reader) (string, error) {
+	bts, err := ReadBytes(reader)
+	return string(bts), err
+}
+
+func WriteBytes(bts []byte, writer io.Writer) (int, error ){
 	blns := len(bts)
-	err := WriteInt32(int32(blns), writer)
+	buffer := bytes.NewBuffer(make([]byte, 0, blns + 8))
+	err := WriteInt32(int32(blns), buffer)
 	if iserr(err) {
-		return err
+		return 0, err
 	}
-	writer.Write(bts)
-	return err
+	buffer.Write(bts)
+
+	return writer.Write(buffer.Bytes())
+}
+
+func WriteString(val string, writer io.Writer) (int, error) {
+	return WriteBytes([]byte(val), writer)
 }

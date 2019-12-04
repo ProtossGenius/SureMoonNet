@@ -40,15 +40,6 @@ func (this *login) Test2(key string, c net.Conn) bool {
 		return false
 	}
 }
-func AccpterRun(adapter smn_rpc.MessageAdapterItf) {
-	rpcSvr := svr_rpc_rpc_itf.NewSvrRpcLogin(&login{})
-	for {
-		msg, err := adapter.ReadCall()
-		check(err)
-		dict, res, err := rpcSvr.OnMessage(msg, adapter.GetConn())
-		adapter.WriteRet(dict, res, err)
-	}
-}
 
 func accept(conn net.Conn) {
 	sm := smn_rpc.NewRPCServiceManager(conn)

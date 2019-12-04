@@ -19,22 +19,22 @@ const (
 type FConnFactory func(no int64, mgr *ServiceManager, desc string, localAddr, remoteAddr net.Addr) ForwardConnItf
 
 func newDftFConn(no int64, mgr *ServiceManager, desc string, localAddr, remoteAddr net.Addr) ForwardConnItf {
-	return &fConn{no: no, mgr: mgr, desc: desc, localAddr:localAddr, remoteAddr:remoteAddr, cache:smn_stream.NewByteCache(1000, 1 * time.Second)}
+	return &fConn{no: no, mgr: mgr, desc: desc, localAddr: localAddr, remoteAddr: remoteAddr, cache: smn_stream.NewByteCache(1000, 1*time.Second)}
 }
 
 type ServiceManager struct {
-	OnErr    smn_err.OnErr
-	TimeOut  time.Duration
-	conn     net.Conn
-	sendChan chan *smn_base.FPkg
-	regMap   map[int64]ForwardConnItf //key always > 0
-	close    chan int
+	OnErr        smn_err.OnErr
+	TimeOut      time.Duration
+	conn         net.Conn
+	sendChan     chan *smn_base.FPkg
+	regMap       map[int64]ForwardConnItf //key always > 0
+	close        chan int
 	FConnFactory FConnFactory
-	mapLock  sync.Mutex //因为map操作并不频繁，所以不用计较锁的开销
+	mapLock      sync.Mutex //因为map操作并不频繁，所以不用计较锁的开销
 }
 
 func NewServiceManager(conn net.Conn) *ServiceManager {
-	return &ServiceManager{conn: conn, close: make(chan int, 1), regMap: make(map[int64]ForwardConnItf), sendChan: make(chan *smn_base.FPkg, 1024), FConnFactory:newDftFConn, OnErr: smn_err.DftOnErr, TimeOut: 1 * time.Second}
+	return &ServiceManager{conn: conn, close: make(chan int, 1), regMap: make(map[int64]ForwardConnItf), sendChan: make(chan *smn_base.FPkg, 1024), FConnFactory: newDftFConn, OnErr: smn_err.DftOnErr, TimeOut: 1 * time.Second}
 }
 
 func (this *ServiceManager) Send(p *smn_base.FPkg) {
@@ -79,11 +79,7 @@ func sendFPkg(c net.Conn, msg *smn_base.FPkg) error {
 	if err != nil {
 		return err
 	}
-	err = smn_net.WriteInt(len(bts), c)
-	if err != nil {
-		return err
-	}
-	_, err = c.Write(bts)
+	_, err = smn_net.WriteBytes(bts, c)
 	return err
 }
 
@@ -104,20 +100,11 @@ func (this *ServiceManager) Work() {
 	}()
 	go func() {
 		for {
-			size, err := smn_net.ReadInt(this.conn)
+			bts, err := smn_net.ReadBytes(this.conn)
 			if err != nil {
 				this.OnErr(err)
-			}
-			bts := make([]byte, size)
-			rs, err := this.conn.Read(bts)
-			if err != nil {
-				this.OnErr(err)
-
 			}
 			pkg := &smn_base.FPkg{}
-			if rs != size {
-				this.OnErr(fmt.Errorf(smn_net.ErrNotGetEnoughLengthBytes, size, rs))
-			}
 			err = proto.Unmarshal(bts, pkg)
 			if err != nil {
 				this.OnErr(err)
@@ -135,20 +122,18 @@ type ForwardConnItf interface {
 	net.Conn
 	SendToSM(msg []byte)
 	RecvFromSM(msg []byte)
-	Desc()string
+	Desc() string
 	SetTimeOut(t time.Duration)
 }
 
 type fConn struct {
-	localAddr net.Addr
+	localAddr  net.Addr
 	remoteAddr net.Addr
-	no       int64
-	mgr      *ServiceManager
-	desc     string
-	cache    *smn_stream.ByteCache
+	no         int64
+	mgr        *ServiceManager
+	desc       string
+	cache      *smn_stream.ByteCache
 }
-
-
 
 func (this *fConn) Read(b []byte) (n int, err error) {
 	return this.cache.Read(b)
@@ -196,6 +181,6 @@ func (this *fConn) Desc() string {
 	return this.desc
 }
 
-func (this *fConn) SetTimeOut(t time.Duration){
+func (this *fConn) SetTimeOut(t time.Duration) {
 	this.cache.TimeOut = t
 }

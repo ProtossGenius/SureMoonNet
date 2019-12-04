@@ -3,6 +3,7 @@ package smn_stream
 import (
 	"time"
 	"sync"
+	"sync/atomic"
 )
 
 type ByteCache struct {
@@ -10,7 +11,7 @@ type ByteCache struct {
 	recvChan chan []byte
 	last     []byte
 	readLock sync.Mutex
-	len   int
+	len   int32
 }
 
 func NewByteCache(writeTime int, timeout time.Duration) *ByteCache {
@@ -26,10 +27,8 @@ func minInt(a, b int) int {
 }
 
 func (this *ByteCache) Write(msg []byte)  {
-	this.readLock.Lock()
-	defer this.readLock.Unlock()
 	this.recvChan<-msg
-	this.len += len(msg)
+	atomic.AddInt32(&this.len, int32(len(msg)))
 }
 //copy `size` byte from fConn.last to b[start:]
 func (this *ByteCache) readCopy(b []byte, start, size int) (copyLen int) {
@@ -45,7 +44,8 @@ func (this *ByteCache) readCopy(b []byte, start, size int) (copyLen int) {
 func (this *ByteCache) Read(b []byte) (n int, err error) {
 	this.readLock.Lock()
 	defer this.readLock.Unlock()
-	defer func() {this.len -= n}()
+	defer func() {	atomic.AddInt32(&this.len, int32(-n))
+	}()
 	size := len(b)
 	acLen := 0
 	if this.TimeOut == 0{
@@ -69,5 +69,5 @@ func (this *ByteCache) Read(b []byte) (n int, err error) {
 }
 
 func (this *ByteCache) Len() int {
-	return this.len
+	return int(this.len)
 }

@@ -1,7 +1,6 @@
 package smn_rpc
 
 import (
-	"fmt"
 	"net"
 	"pb/smn_base"
 	"pb/smn_dict"
@@ -49,11 +48,7 @@ func WriteCall(conn net.Conn, dict smn_dict.EDict, message proto.Message) (int, 
 	}
 	msg := &smn_base.Call{Dict: dict, Msg: bts}
 	bts, err = proto.Marshal(msg)
-	err = smn_net.WriteInt(len(bts), conn)
-	if iserr(err) {
-		return 0, err
-	}
-	return conn.Write(bts)
+	return smn_net.WriteBytes(bts, conn)
 }
 
 func (this *MessageAdapter) WriteCall(dict smn_dict.EDict, message proto.Message) (int, error) {
@@ -61,26 +56,23 @@ func (this *MessageAdapter) WriteCall(dict smn_dict.EDict, message proto.Message
 }
 
 func WriteRet(conn net.Conn, dict smn_dict.EDict, message proto.Message, err error) (int, error) {
-	bytes := make([]byte, 0)
+	bts := make([]byte, 0)
 	ret := &smn_base.Ret{Dict: dict, Err: false}
 	if err != nil {
 		ret.Err = true
-		bytes = []byte(err.Error())
-	} else {
-		var e error
-		bytes, e = proto.Marshal(message)
-		if e != nil {
-			ret.Err = true
-			bytes = []byte(e.Error())
+		ret.Msg = []byte(err.Error())
+	}else {
+		ret.Msg, err = proto.Marshal(message)
+		if err != nil {
+			return 0, err
 		}
 	}
-	ret.Msg = bytes
-	bytes, err = proto.Marshal(ret)
-	err = smn_net.WriteInt(len(bytes), conn)
-	if iserr(err) {
+	bts, err = proto.Marshal(ret)
+	if err != nil{
 		return 0, err
 	}
-	return conn.Write(bytes)
+	return smn_net.WriteBytes(bts, conn)
+
 }
 
 func (this *MessageAdapter) WriteRet(dict smn_dict.EDict, message proto.Message, err error) (int, error) {
@@ -88,17 +80,9 @@ func (this *MessageAdapter) WriteRet(dict smn_dict.EDict, message proto.Message,
 }
 
 func (this *MessageAdapter) ReadCall() (*smn_base.Call, error) {
-	len, err := smn_net.ReadInt(this.c)
-	if iserr(err) {
+	bts, err := smn_net.ReadBytes(this.c)
+	if err != nil{
 		return nil, err
-	}
-	bts := make([]byte, len)
-	rl, err := this.c.Read(bts)
-	if err != nil {
-		return nil, err
-	}
-	if rl != len {
-		return nil, fmt.Errorf(smn_net.ErrNotGetEnoughLengthBytes, len, rl)
 	}
 	msg := &smn_base.Call{}
 	proto.Unmarshal(bts, msg)
@@ -106,20 +90,12 @@ func (this *MessageAdapter) ReadCall() (*smn_base.Call, error) {
 }
 
 func (this *MessageAdapter) ReadRet() (*smn_base.Ret, error) {
-	len, err := smn_net.ReadInt(this.c)
-	if iserr(err) {
+	bts, err := smn_net.ReadBytes(this.c)
+	if err != nil{
 		return nil, err
-	}
-	bytes := make([]byte, len)
-	rl, err := this.c.Read(bytes)
-	if err != nil {
-		return nil, err
-	}
-	if rl != len {
-		return nil, fmt.Errorf(smn_net.ErrNotGetEnoughLengthBytes, len, rl)
 	}
 	msg := &smn_base.Ret{}
-	err = proto.Unmarshal(bytes, msg)
+	err = proto.Unmarshal(bts, msg)
 	return msg, err
 }
 
