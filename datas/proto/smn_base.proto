@@ -18,4 +18,5 @@ message Ret{
 message FPkg{
     int64 NO = 1;
     bytes msg = 2;
+    bool  Err = 3;
 }

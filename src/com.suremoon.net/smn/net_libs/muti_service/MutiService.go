@@ -10,6 +10,7 @@ import (
 	"time"
 	"sync"
 	"com.suremoon.net/basis/smn_stream"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -44,9 +45,17 @@ func (this *ServiceManager) Send(p *smn_base.FPkg) {
 func (this *ServiceManager) recv(p *smn_base.FPkg) {
 	conn, ok := this.GetFConn(p.NO)
 	if ok {
+		if p.Err{
+			err := errors.New(string(p.Msg))
+			conn.ErrClose(err)
+			this.OnErr(err)
+			return
+		}
 		conn.RecvFromSM(p.Msg)
 	} else {
-		this.OnErr(fmt.Errorf(ErrServerNumNotExist, p.NO))
+		err := fmt.Errorf(ErrServerNumNotExist, p.NO)
+		this.OnErr(err)
+		this.Send(&smn_base.FPkg{NO:p.NO, Err:true, Msg:[]byte(err.Error())})
 	}
 }
 
@@ -124,6 +133,7 @@ type ForwardConnItf interface {
 	RecvFromSM(msg []byte)
 	Desc() string
 	SetTimeOut(t time.Duration)
+	ErrClose(err error)
 }
 
 type fConn struct {
@@ -133,19 +143,30 @@ type fConn struct {
 	mgr        *ServiceManager
 	desc       string
 	cache      *smn_stream.ByteCache
+	err error
 }
+
 
 func (this *fConn) Read(b []byte) (n int, err error) {
 	return this.cache.Read(b)
 }
 
 func (this *fConn) Write(b []byte) (n int, err error) {
+	if this.err != nil{
+		return 0, this.err
+	}
 	this.SendToSM(b)
 	return 0, nil
 }
 
+func (this *fConn) ErrClose(err error) {
+	this.err = err
+	this.mgr.Drop(this.no)
+	this.cache.ErrorClose(err)
+}
 func (this *fConn) Close() error {
 	this.mgr.Drop(this.no)
+	this.cache.Close()
 	return nil
 }
 
@@ -182,5 +203,5 @@ func (this *fConn) Desc() string {
 }
 
 func (this *fConn) SetTimeOut(t time.Duration) {
-	this.cache.TimeOut = t
+	this.cache.SetTimeOut(t)
 }
