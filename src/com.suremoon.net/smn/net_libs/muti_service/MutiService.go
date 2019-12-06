@@ -20,7 +20,7 @@ const (
 type FConnFactory func(no int64, mgr *ServiceManager, desc string, localAddr, remoteAddr net.Addr) ForwardConnItf
 
 func newDftFConn(no int64, mgr *ServiceManager, desc string, localAddr, remoteAddr net.Addr) ForwardConnItf {
-	return &fConn{no: no, mgr: mgr, desc: desc, localAddr: localAddr, remoteAddr: remoteAddr, cache: smn_stream.NewByteCache(1000, 1*time.Second)}
+	return &FConn{no: no, mgr: mgr, desc: desc, localAddr: localAddr, remoteAddr: remoteAddr, cache: smn_stream.NewByteCache(1000, 1*time.Second)}
 }
 
 type ServiceManager struct {
@@ -136,7 +136,7 @@ type ForwardConnItf interface {
 	ErrClose(err error)
 }
 
-type fConn struct {
+type FConn struct {
 	localAddr  net.Addr
 	remoteAddr net.Addr
 	no         int64
@@ -147,11 +147,11 @@ type fConn struct {
 }
 
 
-func (this *fConn) Read(b []byte) (n int, err error) {
+func (this *FConn) Read(b []byte) (n int, err error) {
 	return this.cache.Read(b)
 }
 
-func (this *fConn) Write(b []byte) (n int, err error) {
+func (this *FConn) Write(b []byte) (n int, err error) {
 	if this.err != nil{
 		return 0, this.err
 	}
@@ -159,49 +159,49 @@ func (this *fConn) Write(b []byte) (n int, err error) {
 	return 0, nil
 }
 
-func (this *fConn) ErrClose(err error) {
+func (this *FConn) ErrClose(err error) {
 	this.err = err
 	this.mgr.Drop(this.no)
 	this.cache.ErrorClose(err)
 }
-func (this *fConn) Close() error {
+func (this *FConn) Close() error {
 	this.mgr.Drop(this.no)
 	this.cache.Close()
 	return nil
 }
 
-func (this *fConn) LocalAddr() net.Addr {
+func (this *FConn) LocalAddr() net.Addr {
 	return this.localAddr
 }
 
-func (this *fConn) RemoteAddr() net.Addr {
+func (this *FConn) RemoteAddr() net.Addr {
 	return this.remoteAddr
 }
 
-func (this *fConn) SetDeadline(t time.Time) error {
+func (this *FConn) SetDeadline(t time.Time) error {
 	return nil
 }
 
-func (this *fConn) SetReadDeadline(t time.Time) error {
+func (this *FConn) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-func (this *fConn) SetWriteDeadline(t time.Time) error {
+func (this *FConn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (this *fConn) SendToSM(msg []byte) {
+func (this *FConn) SendToSM(msg []byte) {
 	this.mgr.Send(&smn_base.FPkg{NO: this.no, Msg: msg})
 }
 
-func (this *fConn) RecvFromSM(msg []byte) {
+func (this *FConn) RecvFromSM(msg []byte) {
 	this.cache.Write(msg)
 }
 
-func (this *fConn) Desc() string {
+func (this *FConn) Desc() string {
 	return this.desc
 }
 
-func (this *fConn) SetTimeOut(t time.Duration) {
+func (this *FConn) SetTimeOut(t time.Duration) {
 	this.cache.SetTimeOut(t)
 }
