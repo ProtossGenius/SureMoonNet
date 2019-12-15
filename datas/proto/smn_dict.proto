@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package smn_dict;
+
+enum EDict{
+	None = 0;
+	rip_rpc_itf_Login_DoLogin_Prm = 1;
+	rip_rpc_itf_Login_DoLogin_Ret = 2;
+	rip_rpc_itf_Login_Test1_Prm = 3;
+	rip_rpc_itf_Login_Test1_Ret = 4;
+	rip_rpc_itf_Login_Test2_Prm = 5;
+	rip_rpc_itf_Login_Test2_Ret = 6;
+	smn_base_Call = 7;
+	smn_base_Ret = 8;
+	smn_base_FPkg = 9;
+}
