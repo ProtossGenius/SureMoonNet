@@ -36,5 +36,5 @@ clean:
 	rm -rf ./pb
 	rm -rf ./rpc_nitf
 	rm -rf ./pbr
-test: itf2proto go_protoread proto_compile itf2rpc
+test: itf2proto proto_compile go_protoread itf2rpc
 	go run ./test/smn_net_rpc/test.go

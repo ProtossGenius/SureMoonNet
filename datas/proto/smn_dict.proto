@@ -10,7 +10,7 @@ enum EDict{
 	rip_rpc_itf_Login_DoLogin_Prm = 4;
 	rip_rpc_itf_Login_DoLogin_Ret = 5;
 	rip_rpc_itf_Login_Test1_Prm = 6;
-	smn_base_Call = 7;
-	smn_base_Ret = 8;
-	smn_base_FPkg = 9;
+	smn_base_FPkg = 7;
+	smn_base_Call = 8;
+	smn_base_Ret = 9;
 }
