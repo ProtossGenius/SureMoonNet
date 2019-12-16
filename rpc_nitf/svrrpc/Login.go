@@ -9,7 +9,7 @@ import "github.com/ProtossGenius/SureMoonNet/pb/smn_dict"
 import "github.com/ProtossGenius/SureMoonNet/pb/smn_base"
 import "github.com/ProtossGenius/SureMoonNet/pbr"
 import "net"
-import "github.com/golang/protobuf/protoc-gen-go/testdata/imports/fmt"
+import "fmt"
 import "github.com/ProtossGenius/SureMoonNet/pb/rip_rpc_itf"
 import "github.com/ProtossGenius/SureMoonNet/smn/net_libs/smn_rpc"
 type SvrRpcLogin struct {

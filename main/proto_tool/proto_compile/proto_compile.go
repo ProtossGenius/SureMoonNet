@@ -48,10 +48,13 @@ func getPkg(path string) string {
 
 func main() {
 	p := flag.String("p", "protoc", "protoc's path")
-	o := flag.String("o", "./src/pb/", "output path")
+	o := flag.String("o", "./pb/", "output path")
 	i := flag.String("i", "./datas/proto/", "input dir path.")
+	ep := flag.String("ep", "", "export path.")
 	lang := flag.String("lang", "go", "output language, cpp/csharp/java/javanano/objc/python/ruby")
 	flag.Parse()
+	extPath := strings.Replace(*ep, "\\", "/", -1) + "/" + strings.Replace(*o, "./", "", -1)
+	ignoreDir := strings.Split(extPath, "/")[0]
 	err := os.MkdirAll(*o, os.ModePerm)
 	checkerr(err)
 	comp = "--" + *lang + "_out=%s" //"--go_out=%s"
@@ -59,7 +62,7 @@ func main() {
 	smn_file.DeepTraversalDir(*i, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".proto") {
 			op := *i + "/temp/" + getPkg(path)
-			op2 := *i + "/temp/pb/" + getPkg(path)
+			op2 := *i + "/temp/" + extPath + getPkg(path)
 			os.MkdirAll(op, os.ModePerm)
 			os.MkdirAll(op2, os.ModePerm)
 			data, err := smn_file.FileReadAll(path)
@@ -75,7 +78,7 @@ func main() {
 					nl = strings.Replace(nl, "\"", "", -1)
 					nl = strings.TrimSpace(nl)
 					if smn_file.IsFileExist(*i + "/" + nl) {
-						line = strings.Replace(line, nl, "pb/"+getPkg(*i+"/"+nl)+"/"+nl, -1)
+						line = strings.Replace(line, nl, extPath+getPkg(*i+"/"+nl)+"/"+nl, -1)
 					}
 				}
 				file.WriteString(line + "\n")
@@ -87,7 +90,7 @@ func main() {
 		return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 	})
 	smn_file.DeepTraversalDir(*i+"/temp/", func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
-		if info.IsDir() && info.Name() == "pb" {
+		if info.IsDir() && info.Name() == ignoreDir {
 			return smn_file.FILE_DO_FUNC_RESULT_NO_DEAL
 		}
 		if strings.HasSuffix(info.Name(), ".proto") {

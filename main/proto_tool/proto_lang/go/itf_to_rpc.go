@@ -74,7 +74,7 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 		file, err := smn_file.CreateNewFile(path + itf.Name + ".go")
 		check(err)
 		gof := code_file_build.NewGoFile("svr_rpc_"+itf.Package, file, "Product by SureMoonNet", "Author: ProtossGenius", "Auto-code should not change.")
-		gof.AddImports(code_file_build.LocalImportable(GOPATH))
+		gof.AddImports(code_file_build.LocalImptTarget(GOPATH, GOPATH+"/github.com/ProtossGenius/SureMoonNet"))
 		gof.Imports(itf.Package, "github.com/golang/protobuf/proto")
 		{ // rpc struct
 			b := gof.AddBlock("type SvrRpc%s struct", itf.Name)
@@ -163,7 +163,7 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 		file, err := smn_file.CreateNewFile(path + itf.Name + ".go")
 		check(err)
 		gof := code_file_build.NewGoFile("clt_rpc_"+itf.Package, file, "Product by SureMoonNet", "Author: ProtossGenius", "Auto-code should not change.")
-		gof.AddImports(code_file_build.LocalImportable(GOPATH))
+		gof.AddImports(code_file_build.LocalImptTarget(GOPATH, GOPATH+"/github.com/ProtossGenius/SureMoonNet"))
 		gof.Imports(itf.Package, "github.com/golang/protobuf/proto")
 		gof.Imports("rip_" + itf.Package)
 		tryImport := func(typ string) {

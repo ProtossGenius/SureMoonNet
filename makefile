@@ -17,7 +17,7 @@ itf2rpc:c_itf2rpc
 	"./bin/itf2rpc.exe" -i "./test/rpc_itf/" -s -c -o "./rpc_nitf/" -gopath=$(GOPATH)/src
 	
 proto_compile: c_proto_compile
-	"./bin/proto_compile.exe" -i ./datas/proto/ -o ./pb/
+	"./bin/proto_compile.exe" -i ./datas/proto/ -o ./pb/ -ep "github.com/ProtossGenius/SureMoonNet"
 	
 go_protoread: c_proto_read
 	"./bin/proto_read.exe" -proto "./datas/proto/" -pkgh "pb/" -o "./pbr/read.go" -gopath=$(GOPATH)/src
