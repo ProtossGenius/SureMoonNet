@@ -2,15 +2,13 @@ syntax = "proto3";
 
 package smn_base;
 
-import "smn_dict.proto";
-
 message Call{
-    smn_dict.EDict dict = 1;
+    int32 dict = 1;
     bytes msg = 2;
 }
 
 message Ret{
-    smn_dict.EDict dict = 1;
+    int32 dict = 1;
     bool  Err = 2;
     bytes msg = 3;
 }

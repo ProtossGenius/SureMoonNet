@@ -108,8 +108,8 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 				ib.WriteLine("_e = fmt.Errorf(\"%%v\", err)")
 				b.WriteLine("}()")
 			}
-			b.WriteLine("m := smn_pbr.GetMsgByDict(c.Msg, c.Dict)")
-			sb := b.AddBlock("switch c.Dict") //sb -> switch block
+			b.WriteLine("m := smn_pbr.GetMsgByDict(c.Msg,smn_dict.EDict(c.Dict))")
+			sb := b.AddBlock("switch smn_dict.EDict(c.Dict)") //sb -> switch block
 			for _, f := range itf.Functions {
 				cb := sb.AddBlock("case smn_dict.EDict_rip_%s_%s_%s_Prm:", itf.Package, itf.Name, f.Name)
 				cb.Imports("rip_" + itf.Package)
@@ -244,7 +244,7 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 				b.WriteLine("this.lock.Lock()")
 				b.WriteLine("defer this.lock.Unlock()")
 				b.WriteLine("msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
-				b.WriteLine("this.conn.WriteCall(smn_dict.EDict_rip_%s_%s_%s_Prm, msg)", itf.Package, itf.Name, f.Name)
+				b.WriteLine("this.conn.WriteCall(int32(smn_dict.EDict_rip_%s_%s_%s_Prm), msg)", itf.Package, itf.Name, f.Name)
 				if haveConn {
 					b.WriteLine("%s(this.conn.GetConn())", connFunc)
 				}

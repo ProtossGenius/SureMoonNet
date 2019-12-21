@@ -9,7 +9,7 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/smn/code_file_build"
 )
 
-func GoMsgReader(protoPath, pkgHead, goPath, o string) (err error) {
+func GoMsgReader(protoPath, pkgHead, goPath, ext, o string) (err error) {
 	err = os.MkdirAll((o)[:strings.LastIndex(o, "/")], os.ModePerm)
 	if err != nil {
 		return err
@@ -23,7 +23,7 @@ func GoMsgReader(protoPath, pkgHead, goPath, o string) (err error) {
 		return err
 	}
 	fileWriter := code_file_build.NewGoFile("smn_pbr", file, "product by tools, should not change this file.", "Author: SureMoon", "")
-	fileWriter.AddImports(code_file_build.LocalImptTarget(goPath, goPath+"/github.com/ProtossGenius/SureMoonNet"))
+	fileWriter.AddImports(code_file_build.LocalImptTarget(goPath, goPath+ext))
 	fileWriter.Import("github.com/golang/protobuf/proto")
 	fileWriter.Import("pb/smn_dict")
 	funcList := fileWriter.AddBlock("var funcList = []funcGetMsg")

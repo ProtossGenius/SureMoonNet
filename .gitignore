@@ -3,6 +3,9 @@
 pkg/
 bin/
 pb/
+datas/proto/smn_dict.proto
+datas/proto/rip_rpc_itf.proto
+!pb/smn_base
 rpc_nitf/
 pbr/
 temp/

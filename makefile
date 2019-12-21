@@ -20,7 +20,7 @@ proto_compile: c_proto_compile
 	"./bin/proto_compile.exe" -i ./datas/proto/ -o ./pb/ -ep "github.com/ProtossGenius/SureMoonNet"
 	
 go_protoread: c_proto_read
-	"./bin/proto_read.exe" -proto "./datas/proto/" -pkgh "pb/" -o "./pbr/read.go" -gopath=$(GOPATH)/src
+	"./bin/proto_read.exe" -proto "./datas/proto/" -pkgh "pb/" -o "./pbr/read.go" -gopath=$(GOPATH)/src -ext="/github.com/ProtossGenius/SureMoonNet"
 
 getlines:
 	go run ./main/get-project-lines/get-pro-lines.go
@@ -32,9 +32,10 @@ importpkg:
 	go get -u github.com/xtaci/kcp-go
 
 clean:
+	rm -f datas/proto/rip_rpc_itf.proto
+	rm -f datas/proto/smn_dict.proto
 	rm -f bin/*.exe
-	rm -rf ./pb
 	rm -rf ./rpc_nitf
 	rm -rf ./pbr
-test: itf2proto proto_compile go_protoread itf2rpc
+test: clean itf2proto proto_compile go_protoread itf2rpc
 	go run ./test/smn_net_rpc/test.go

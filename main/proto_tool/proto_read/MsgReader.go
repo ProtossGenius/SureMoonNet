@@ -22,12 +22,13 @@ func main() {
 	pkgHead := flag.String("pkgh", "pb/", "proto's pkg head")
 	o := flag.String("o", "./src/pbr/read.go", "out path.")
 	goPath := flag.String("gopath", "$GOPATH", "go path")
+	ext := flag.String("ext", "", "exturn path.")
 	lang := flag.String("lang", "go", "output coding language.")
 	flag.Parse()
 	f, ok := ReaderMap[*lang]
 	if !ok {
 		panic(fmt.Errorf("Error! not support language <%s>, you can contact us to achieve. ", *lang))
 	}
-	err := f(*protoPath, *pkgHead, *goPath, *o)
+	err := f(*protoPath, *pkgHead, *goPath, *ext, *o)
 	checkerr(err)
 }

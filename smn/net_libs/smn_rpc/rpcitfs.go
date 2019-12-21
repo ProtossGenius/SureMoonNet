@@ -5,7 +5,6 @@ import (
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_net"
 	"github.com/ProtossGenius/SureMoonNet/pb/smn_base"
-	"github.com/ProtossGenius/SureMoonNet/pb/smn_dict"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -16,12 +15,12 @@ func iserr(err error) bool {
 type ConnFunc func(conn net.Conn)
 
 type RpcSvrItf interface {
-	OnMessage(c *smn_base.Call, conn net.Conn) (_d smn_dict.EDict, _p proto.Message, _e error)
+	OnMessage(c *smn_base.Call, conn net.Conn) (_d int32, _p proto.Message, _e error)
 }
 
 type MessageAdapterItf interface {
-	WriteCall(dict smn_dict.EDict, message proto.Message) (int, error)
-	WriteRet(dict smn_dict.EDict, message proto.Message, err error) (int, error)
+	WriteCall(dict int32, message proto.Message) (int, error)
+	WriteRet(dict int32, message proto.Message, err error) (int, error)
 	ReadCall() (*smn_base.Call, error)
 	ReadRet() (*smn_base.Ret, error)
 	GetConn() net.Conn
@@ -43,7 +42,7 @@ func (this *MessageAdapter) GetConn() net.Conn {
 	return this.c
 }
 
-func WriteCall(conn net.Conn, dict smn_dict.EDict, message proto.Message) (int, error) {
+func WriteCall(conn net.Conn, dict int32, message proto.Message) (int, error) {
 	bts, err := proto.Marshal(message)
 	if iserr(err) {
 		return 0, err
@@ -53,11 +52,11 @@ func WriteCall(conn net.Conn, dict smn_dict.EDict, message proto.Message) (int, 
 	return smn_net.WriteBytes(bts, conn)
 }
 
-func (this *MessageAdapter) WriteCall(dict smn_dict.EDict, message proto.Message) (int, error) {
+func (this *MessageAdapter) WriteCall(dict int32, message proto.Message) (int, error) {
 	return WriteCall(this.c, dict, message)
 }
 
-func WriteRet(conn net.Conn, dict smn_dict.EDict, message proto.Message, err error) (int, error) {
+func WriteRet(conn net.Conn, dict int32, message proto.Message, err error) (int, error) {
 	bts := make([]byte, 0)
 	ret := &smn_base.Ret{Dict: dict, Err: false}
 	if err != nil {
@@ -77,7 +76,7 @@ func WriteRet(conn net.Conn, dict smn_dict.EDict, message proto.Message, err err
 
 }
 
-func (this *MessageAdapter) WriteRet(dict smn_dict.EDict, message proto.Message, err error) (int, error) {
+func (this *MessageAdapter) WriteRet(dict int32, message proto.Message, err error) (int, error) {
 	return WriteRet(this.c, dict, message, err)
 }
 

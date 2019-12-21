@@ -46,7 +46,7 @@ func AccpterRun(adapter smn_rpc.MessageAdapterItf) {
 		msg, err := adapter.ReadCall()
 		check(err)
 		dict, res, err := rpcSvr.OnMessage(msg, adapter.GetConn())
-		adapter.WriteRet(dict, res, err)
+		adapter.WriteRet(int32(dict), res, err)
 	}
 }
 
