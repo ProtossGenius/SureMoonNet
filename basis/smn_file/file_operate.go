@@ -53,3 +53,27 @@ func FileScanner(path string) (*bufio.Scanner, *os.File, error) {
 	}
 	return bufio.NewScanner(file), file, nil
 }
+
+func RemoveDirctory(path string) error {
+	dirs, err := ioutil.ReadDir(path)
+	if err != nil {
+		return err
+	}
+	PthSep := string(os.PathSeparator)
+	for _, info := range dirs {
+		fpath := path + PthSep + info.Name()
+		if info.IsDir() {
+			err = RemoveDirctory(fpath)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = os.Remove(fpath)
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+	return os.Remove(path)
+}
