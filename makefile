@@ -1,26 +1,29 @@
 c_proto_read:
-	go build -o ./bin/proto_read.exe ./main/proto_tool/proto_read/MsgReader.go
+	cd ./main/proto_tool/proto_read/smn_pr_go &&  go install
 
 c_proto_compile:
-	go build -o ./bin/proto_compile.exe ./main/proto_tool/proto_compile/proto_compile.go
+	cd ./main/proto_tool/smn_protocpl && go install 
 	
 c_itf2proto:
-	go build -o ./bin/itf2proto.exe ./main/proto_tool/proto_itf/to_proto/ItfToProto.go
+	cd ./main/proto_tool/proto_itf/smn_itf2proto  && go install
 	
-c_itf2rpc:
-	go build -o ./bin/itf2rpc.exe ./main/proto_tool/proto_lang/go/itf_to_rpc.go
-	
+c_itf2rpc_go:
+	cd ./main/proto_tool/proto_lang/smn_itf2rpc_go	&& go install 
+
 itf2proto: c_itf2proto
-	"./bin/itf2proto.exe" -i "./test/rpc_itf/" -o ./datas/proto/
+	smn_itf2proto -i "./test/rpc_itf/" -o ./datas/proto/
 	
-itf2rpc:c_itf2rpc
-	"./bin/itf2rpc.exe" -i "./test/rpc_itf/" -s -c -o "./rpc_nitf/" -gopath=$(GOPATH)/src
+install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go
+	echo "finish"
+
+itf2rpc:c_itf2rpc_go
+	smn_itf2rpc_go -i "./test/rpc_itf/" -s -c -o "./rpc_nitf/" -gopath=$(GOPATH)/src
 	
 proto_compile: c_proto_compile
-	"./bin/proto_compile.exe" -i ./datas/proto/ -o ./pb/ -ep "github.com/ProtossGenius/SureMoonNet"
+	smn_protocpl -i ./datas/proto/ -o ./pb/ -ep "github.com/ProtossGenius/SureMoonNet"
 	
 go_protoread: c_proto_read
-	"./bin/proto_read.exe" -proto "./datas/proto/" -pkgh "pb/" -o "./pbr/read.go" -gopath=$(GOPATH)/src -ext="/github.com/ProtossGenius/SureMoonNet"
+	smn_pr_go -proto "./datas/proto/" -pkgh "pb/" -o "./pbr/read.go" -gopath=$(GOPATH)/src -ext="/github.com/ProtossGenius/SureMoonNet"
 
 getlines:
 	go run ./main/get-project-lines/get-pro-lines.go
