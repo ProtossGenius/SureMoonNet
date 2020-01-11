@@ -5,8 +5,8 @@ import (
 	"net"
 	"time"
 
-	clt_rpc_rpc_itf "github.com/ProtossGenius/SureMoonNet/rpc_nitf/clientrpc"
-	svr_rpc_rpc_itf "github.com/ProtossGenius/SureMoonNet/rpc_nitf/svrrpc"
+	"github.com/ProtossGenius/SureMoonNet/rpc_nitf/cltrpc/clt_rpc_rpc_itf"
+	"github.com/ProtossGenius/SureMoonNet/rpc_nitf/svrrpc/svr_rpc_rpc_itf"
 	"github.com/ProtossGenius/SureMoonNet/test/rpc_itf"
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_net"

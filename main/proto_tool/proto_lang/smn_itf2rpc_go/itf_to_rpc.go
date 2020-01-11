@@ -280,14 +280,18 @@ func main() {
 	itfs, err := smn_rpc_itf.GetItfListFromDir(*i)
 	check(err)
 	for _, list := range itfs {
+		if len(list) == 0 {
+			continue
+		}
+		pkg := list[0].Package
 		if *s {
-			op := *o + "/svrrpc/"
+			op := *o + "/svrrpc/svr_rpc_" + pkg + "/"
 			err := os.MkdirAll(op, os.ModePerm)
 			check(err)
 			writeSvrRpcFile(op, list)
 		}
 		if *c {
-			op := *o + "/clientrpc/"
+			op := *o + "/cltrpc/clt_rpc_" + pkg + "/"
 			err := os.MkdirAll(op, os.ModePerm)
 			check(err)
 			writeClientRpcFile(op, list)
