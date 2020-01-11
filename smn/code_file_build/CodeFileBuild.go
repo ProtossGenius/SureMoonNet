@@ -163,15 +163,25 @@ func NewGoFile(pkg string, w io.Writer, comments ...string) *CodeFile {
 	return NewCodeFile(pkg, w, GoImp, comments...)
 }
 
-func LocalImptTarget(goPath, targetPath string) map[string]string {
+func LocalImptTarget(goPath string, targetPaths ...string) map[string]string {
 	res := make(map[string]string)
 	smn_file.DeepTraversalDir(goPath, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if info.IsDir() || !strings.HasSuffix(path, ".go") {
 			return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 		}
-		if !strings.HasPrefix(path, targetPath) {
-			return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
+		if len(targetPaths) != 0 {
+			isInTarget := false
+			for _, targetPath := range targetPaths {
+				if strings.HasPrefix(path, targetPath) {
+					isInTarget = true
+					break
+				}
+			}
+			if !isInTarget {
+				return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
+			}
 		}
+
 		scanner, file, err := smn_file.FileScanner(path)
 		if err != nil {
 			log.Printf("LocalImportable DeepTraversalDir path %s, error %s\n", path, err)

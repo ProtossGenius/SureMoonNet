@@ -20,6 +20,7 @@ func check(err error) {
 }
 
 var GOPATH string
+var targetPaths []string
 
 /** file as:
 package xxxx
@@ -74,7 +75,7 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 		file, err := smn_file.CreateNewFile(path + itf.Name + ".go")
 		check(err)
 		gof := code_file_build.NewGoFile("svr_rpc_"+itf.Package, file, "Product by SureMoonNet", "Author: ProtossGenius", "Auto-code should not change.")
-		gof.AddImports(code_file_build.LocalImptTarget(GOPATH, GOPATH+"/github.com/ProtossGenius/SureMoonNet"))
+		gof.AddImports(code_file_build.LocalImptTarget(GOPATH, targetPaths...))
 		gof.Imports(itf.Package, "github.com/golang/protobuf/proto")
 		{ // rpc struct
 			b := gof.AddBlock("type SvrRpc%s struct", itf.Name)
@@ -163,7 +164,7 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 		file, err := smn_file.CreateNewFile(path + itf.Name + ".go")
 		check(err)
 		gof := code_file_build.NewGoFile("clt_rpc_"+itf.Package, file, "Product by SureMoonNet", "Author: ProtossGenius", "Auto-code should not change.")
-		gof.AddImports(code_file_build.LocalImptTarget(GOPATH, GOPATH+"/github.com/ProtossGenius/SureMoonNet"))
+		gof.AddImports(code_file_build.LocalImptTarget(GOPATH, targetPaths...))
 		gof.Imports(itf.Package, "github.com/golang/protobuf/proto")
 		gof.Imports("rip_" + itf.Package)
 		tryImport := func(typ string) {
@@ -267,8 +268,15 @@ func main() {
 	o := flag.String("o", "./src/rpc_nitf/", "rpc interface's net accepter, from proto.Message call interface.")
 	s := flag.Bool("s", true, "is product server code")
 	c := flag.Bool("c", true, "is product client code")
+	pkgh := flag.String("pkgh", "github.com/ProtossGenius/SureMoonNet", "package head.")
 	flag.StringVar(&GOPATH, "gopath", "$GOPATH", "gopath")
 	flag.Parse()
+	harr := strings.Split(*pkgh, ",")
+	for _, str := range harr {
+		p := GOPATH + "/" + str
+		targetPaths = append(targetPaths, p)
+
+	}
 	itfs, err := smn_rpc_itf.GetItfListFromDir(*i)
 	check(err)
 	for _, list := range itfs {
