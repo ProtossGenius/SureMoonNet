@@ -73,7 +73,7 @@ func ffPush() error {
 		return err
 	}
 	//git commit -m
-	fmt.Println("git commit -m ")
+	fmt.Println("git commit -m ", Comment)
 	c = exec.Command("git", "commit", "-m", fmt.Sprintf(`""%s"`, Comment))
 	if err := c.Run(); err != nil {
 		return err
