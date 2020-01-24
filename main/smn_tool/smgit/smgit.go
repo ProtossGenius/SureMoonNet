@@ -73,10 +73,12 @@ func ffPush() error {
 		return err
 	}
 	//git commit -m
+	fmt.Println("git commit -m ")
 	c = exec.Command("git", "commit", "-m", fmt.Sprintf(`""%s"`, Comment))
 	if err := c.Run(); err != nil {
 		return err
 	}
+	fmt.Println("git push")
 	c = exec.Command("git", "push")
 	return c.Run()
 }
@@ -111,9 +113,9 @@ func check(err error) {
 func main() {
 	flag.StringVar(&Comment, "m", "", "comment message for push")
 	flag.Parse()
-	fmt.Println(Comment)
 	doFlag := false
 	args := flag.Args()
+	fmt.Println(args)
 	for _, arg := range args {
 		check(flagMap.Parse(arg))
 		doFlag = true
