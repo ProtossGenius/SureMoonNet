@@ -13,7 +13,7 @@ c_itf2rpc_go:
 itf2proto: c_itf2proto
 	smn_itf2proto -i "./test/rpc_itf/" -o ./datas/proto/
 	
-install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go
+install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go smgit
 	echo "finish"
 
 itf2rpc:c_itf2rpc_go
@@ -24,6 +24,9 @@ proto_compile: c_proto_compile
 	
 go_protoread: c_proto_read
 	smn_pr_go -proto "./datas/proto/" -pkgh "pb/" -o "./pbr/read.go" -gopath=$(GOPATH)/src -ext="/github.com/ProtossGenius/SureMoonNet"
+
+smgit:
+	cd ./main/smn_tool/smgit && go install
 
 getlines:
 	go run ./main/get-project-lines/get-pro-lines.go
