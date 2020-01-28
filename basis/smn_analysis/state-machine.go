@@ -7,9 +7,13 @@ import (
 type OnNodeRead func(stateNode *StateNode, input InputItf) (isEnd bool, err error)
 
 type StateNodeReader interface {
+	//only see if should stop read.
 	PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error)
+	//real read. even isEnd == true the input be readed.
 	Read(stateNode *StateNode, input InputItf) (isEnd bool, err error)
+	//return result
 	GetProduct() ProductItf
+	//let the Reader like new.  it will be call before first Read
 	Clean()
 }
 
