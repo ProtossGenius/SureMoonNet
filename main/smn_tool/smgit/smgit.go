@@ -24,7 +24,7 @@ const (
 	SP   = "sp"
 	RSP  = "rsp"
 
-	CfgPath = "~/.smtools/smgit-cfg"
+	CfgDir = "~/.smtools/smgit-cfg"
 )
 
 type FlagFunc func() error
@@ -85,8 +85,8 @@ func ffPush() error {
 
 func ffSp() error {
 	//create directory
-	if !smn_file.IsFileExist(CfgPath) {
-		if err := os.MkdirAll(CfgPath, os.ModePerm); err != nil {
+	if !smn_file.IsFileExist(CfgDir) {
+		if err := os.MkdirAll(CfgDir, os.ModePerm); err != nil {
 			return err
 		}
 	}
