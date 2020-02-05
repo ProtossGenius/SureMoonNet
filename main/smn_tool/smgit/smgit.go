@@ -116,25 +116,33 @@ func main() {
 	doFlag := false
 	args := flag.Args()
 	fmt.Println(args)
+	argMap := make(map[string]bool, len(args))
+	if Comment != "" {
+		argMap[PUSH] = true
+	}
 	for _, arg := range args {
+		argMap[arg] = true
+	}
+	for arg := range argMap {
 		check(flagMap.Parse(arg))
 		doFlag = true
 	}
 	if !doFlag {
-		fmt.Println(`pull : pull from remote
+		fmt.Println(`smgit pull : pull from remote
 ------------equals--------------
 		git stash save ''
 		git pull 
 		git stash pop
 ################################
-		push : push to remote
+		smgit -m [push] : push to remote, push not must
 ------------equals--------------
 		git add .
 		git comment -m "..."
 		git push
-################################
+################################ wait for add
 		sp  : startup pull
 		rsp : remove statup pull		
+
 `)
 	}
 }
