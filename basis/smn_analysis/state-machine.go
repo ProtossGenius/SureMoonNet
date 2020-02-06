@@ -22,13 +22,22 @@ type InputItf interface {
 }
 
 type ProductItf interface {
-	ProductType() int //-1 --> end.
+	ProductType() int // usally should >= 0
 }
 
 type ProductEnd struct{}
 
 func (*ProductEnd) ProductType() int {
 	return -1
+}
+
+// get product type from default
+type ProductDftNode struct {
+	Num int
+}
+
+func (p *ProductDftNode) ProductType() int {
+	return -2
 }
 
 type StateNode struct {
@@ -117,6 +126,8 @@ func (this *StateMachine) changeStateNode(node *StateNode) {
 }
 
 func (this *StateMachine) End() {
+	this.nowStateNode.GetProduct()
+	this.resultChan <- this.nowStateNode.Result
 	this.resultChan <- &ProductEnd{}
 }
 
@@ -138,7 +149,8 @@ type DftStateNodeReader struct {
 }
 
 func (this *DftStateNodeReader) GetProduct() ProductItf {
-	return nil
+	res := &ProductDftNode{Num: len(this.LiveMap)}
+	return res
 }
 
 func NewDftStateNodeReader(machine *StateMachine) *DftStateNodeReader {
