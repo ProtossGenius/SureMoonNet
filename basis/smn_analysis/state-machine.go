@@ -7,6 +7,8 @@ import (
 type OnNodeRead func(stateNode *StateNode, input InputItf) (isEnd bool, err error)
 
 type StateNodeReader interface {
+	//reader's name
+	Name() string
 	//only see if should stop read.
 	PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error)
 	//real read. even isEnd == true the input be readed.
@@ -33,7 +35,7 @@ func (*ProductEnd) ProductType() int {
 
 // get product type from default
 type ProductDftNode struct {
-	Num int
+	Reason string
 }
 
 func (p *ProductDftNode) ProductType() int {
@@ -148,8 +150,17 @@ type DftStateNodeReader struct {
 	first     bool //is first call after clean
 }
 
+//reader's name
+func (d *DftStateNodeReader) Name() string {
+	return "DftStateNodeReader"
+}
+
 func (this *DftStateNodeReader) GetProduct() ProductItf {
-	res := &ProductDftNode{Num: len(this.LiveMap)}
+	res := &ProductDftNode{Reason: "Err when GetProduct ProductDftNode, MutiNode Lived they're  :"}
+	for key := range this.LiveMap {
+		res.Reason += ", " + key.reader.Name()
+	}
+
 	return res
 }
 

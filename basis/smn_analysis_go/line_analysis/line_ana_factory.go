@@ -1,12 +1,13 @@
 package line_analysis
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis_go/smn_anlys_go_tif"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_str"
-	"fmt"
-	"strings"
 )
 
 // only for easy analysis.
@@ -91,6 +92,10 @@ func NotNullSpaceSplit(inp string) []string {
 	return res
 }
 
+func (this *GoStructNodeReader) Name() string {
+	return "GoStructNodeReader"
+}
+
 func (this *GoStructNodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
 	in := input.(*LineInput)
 	in.Input = strings.Replace(strings.TrimSpace(in.Input), "{", "", -1)
@@ -160,6 +165,10 @@ type GoItfNodeReader struct {
 	stash    string //if last string not end, will stash here.
 	reading  bool   //is start analysis
 	hasStash bool   //is waiting finish read the line. like : Func(a int, \n  b int)(bool)
+}
+
+func (this *GoItfNodeReader) Name() string {
+	return "GoItfNodeReader"
 }
 
 func (this *GoItfNodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
@@ -235,6 +244,9 @@ type GoPkgNodeReader struct {
 	Result *GoPkg
 }
 
+func (this *GoPkgNodeReader) Name() string {
+	return "GoPkgNodeReader"
+}
 func (this *GoPkgNodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
 	return false, nil
 }
