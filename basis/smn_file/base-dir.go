@@ -15,9 +15,9 @@ import (
 type FileDoFuncResult int
 
 const (
-	FILE_DO_FUNC_RESULT_DEFAULT FileDoFuncResult = iota
-	FILE_DO_FUNC_RESULT_STOP_TRAV
-	FILE_DO_FUNC_RESULT_NO_DEAL
+	FILE_DO_FUNC_RESULT_DEFAULT   FileDoFuncResult = iota // continue
+	FILE_DO_FUNC_RESULT_STOP_TRAV                         // stop trav
+	FILE_DO_FUNC_RESULT_NO_DEAL                           // not deal that file and continue
 )
 
 type FileDoFunc func(path string, info os.FileInfo) FileDoFuncResult
