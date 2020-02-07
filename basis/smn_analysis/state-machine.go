@@ -130,6 +130,9 @@ func (this *StateMachine) changeStateNode(node *StateNode) {
 func (this *StateMachine) End() {
 	this.nowStateNode.GetProduct()
 	this.resultChan <- this.nowStateNode.Result
+	if this.nowStateNode.Result.ProductType() == -1 {
+		return
+	}
 	this.resultChan <- &ProductEnd{}
 }
 
@@ -156,6 +159,9 @@ func (d *DftStateNodeReader) Name() string {
 }
 
 func (this *DftStateNodeReader) GetProduct() ProductItf {
+	if len(this.LiveMap) == 0 {
+		return &ProductEnd{}
+	}
 	res := &ProductDftNode{Reason: "Err when GetProduct ProductDftNode, MutiNode Lived they're  :"}
 	for key := range this.LiveMap {
 		res.Reason += ", " + key.reader.Name()
