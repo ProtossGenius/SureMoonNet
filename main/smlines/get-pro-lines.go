@@ -1,17 +1,18 @@
 package main
 
 import (
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_file"
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_stream"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ProtossGenius/SureMoonNet/basis/smn_file"
+	"github.com/ProtossGenius/SureMoonNet/basis/smn_stream"
 )
 
-var filters = []string{".go", ".java"}
+var filters []string
 
 func checkerr(err error) {
 	if err != nil {
@@ -31,8 +32,9 @@ func getFileLines(fname string) int {
 }
 func main() {
 	base := flag.String("base", "./", "base path")
+	exts := flag.String("ext", ".go,.java", "file extension name, split with ','")
 	flag.Parse()
-
+	filters = strings.Split(*exts, ",")
 	count := 0
 	smn_file.DeepTraversalDir(*base, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if info.IsDir() {

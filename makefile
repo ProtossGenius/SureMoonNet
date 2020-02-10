@@ -13,7 +13,7 @@ c_itf2rpc_go:
 itf2proto: c_itf2proto
 	smn_itf2proto -i "./test/rpc_itf/" -o ./datas/proto/
 	
-install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go smgit
+install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go smgit smlines
 	echo "finish"
 
 itf2rpc:c_itf2rpc_go
@@ -28,8 +28,8 @@ go_protoread: c_proto_read
 smgit:
 	cd ./main/smn_tool/smgit && go install
 
-getlines:
-	go run ./main/get-project-lines/get-pro-lines.go
+smlines:
+	cd ./main/smlines && go install
 
 importpkg:
 	go get -u  github.com/json-iterator/go
