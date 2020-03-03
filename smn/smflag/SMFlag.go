@@ -2,7 +2,6 @@ package smflag
 
 import (
 	"flag"
-	"reflect"
 )
 
 type SMFlagValueItf interface {
@@ -14,9 +13,9 @@ type SMFlag struct {
 	CmdList []string
 }
 
-func Parse(value SMFlagValueIt) *SMFlag {
+func Parse(value SMFlagValueItf) *SMFlag {
 	res := &SMFlag{Value: value}
-	tv := reflect.TypeOf(value)
+	// tv := reflect.TypeOf(value)
 	flag.Parse()
 	return res
 }

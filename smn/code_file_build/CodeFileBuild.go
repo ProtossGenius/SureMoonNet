@@ -11,6 +11,7 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis_go/line_analysis"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_file"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_muti_write_cache"
+	"github.com/ProtossGenius/SureMoonNet/basis/smn_str"
 )
 
 const (
@@ -164,6 +165,10 @@ func NewGoFile(pkg string, w io.Writer, comments ...string) *CodeFile {
 }
 
 func LocalImptTarget(goPath string, targetPaths ...string) map[string]string {
+	goPath = smn_str.PathFmt(goPath)
+	for i := range targetPaths {
+		targetPaths[i] = smn_str.PathFmt(targetPaths[i])
+	}
 	res := make(map[string]string)
 	smn_file.DeepTraversalDir(goPath, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if info.IsDir() || !strings.HasSuffix(path, ".go") {
@@ -193,9 +198,9 @@ func LocalImptTarget(goPath string, targetPaths ...string) map[string]string {
 			if strings.HasPrefix(line, "package") {
 				line = strings.Split(line[8:], "/")[0]
 				pkg := line_analysis.NotNullSpaceSplit(line)[0]
-				path = strings.Replace(path, "\\", "/", -1)
-				path = strings.Replace(path, "//", "/", -1)
+				path = smn_str.PathFmt(path)
 				path = strings.Replace(path, goPath, "", -1)
+				path = strings.Replace(path, "\\", "/", -1)
 				path = path[:strings.LastIndex(path, "/")]
 				for strings.HasPrefix(path, "/") {
 					path = path[1:]

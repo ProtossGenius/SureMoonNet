@@ -1,6 +1,7 @@
 package smn_str
 
 import (
+	"os"
 	"strconv"
 	"strings"
 )
@@ -107,4 +108,14 @@ func ToInt(val string) int {
 		return 0
 	}
 	return rv
+}
+
+func GetPathSep() string {
+	return string([]rune{os.PathSeparator})
+}
+
+func PathFmt(path string) string {
+	ps := GetPathSep()
+	res := strings.Replace(path, "/", ps, -1)
+	return strings.Replace(res, "\\", ps, -1)
 }

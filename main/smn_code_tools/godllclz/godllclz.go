@@ -1,7 +1,7 @@
 package godllclz
 
 import (
-	"main/smn_code_tools/godllclz/tpl-consts"
+	tpl_consts "github.com/ProtossGenius/SureMoonNet/main/smn_code_tools/godllclz/tpl-consts"
 )
 
 var oMap = map[string]string{

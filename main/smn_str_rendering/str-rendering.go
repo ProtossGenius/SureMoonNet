@@ -1,8 +1,9 @@
 package main
 
 import (
-	"basis/smn_str_rendering"
 	"flag"
+
+	"github.com/ProtossGenius/SureMoonNet/basis/smn_str_rendering"
 )
 
 func checkerr(err error) {

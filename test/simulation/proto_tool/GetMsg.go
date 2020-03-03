@@ -1,9 +1,10 @@
 package proto_tool
 
 import (
+	"github.com/ProtossGenius/SureMoonNet/pb/base"
+	"github.com/ProtossGenius/SureMoonNet/pb/dict"
+
 	"github.com/golang/protobuf/proto"
-	"pb/base"
-	"pb/dict"
 )
 
 var funcList = []funcGetMsg{

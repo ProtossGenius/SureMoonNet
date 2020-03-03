@@ -1,10 +1,11 @@
 package lw_analysis
 
 import (
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 	"fmt"
 	"strings"
+
+	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
+	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 )
 
 const (
@@ -40,6 +41,10 @@ type StructReadNode struct {
 	Result         *ResultStruct
 	waitStructName bool
 	waitVarName    bool //is waiting var name.
+}
+
+func (this *StructReadNode) Name() string {
+	return "StructReadNode"
 }
 
 func (this *StructReadNode) GetProduct() smn_analysis.ProductItf {

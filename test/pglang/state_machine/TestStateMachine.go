@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
 	"fmt"
 	"time"
+
+	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
 )
 
 /*
@@ -30,6 +31,10 @@ type Output struct {
 type Type1NodeReader struct {
 	Result *Output
 	inputs []*Input
+}
+
+func (this *Type1NodeReader) Name() string {
+	return "Type1NodeReader"
 }
 
 func (this *Type1NodeReader) GetProduct() smn_analysis.ProductItf {
@@ -66,6 +71,10 @@ type Type2NodeReader struct {
 	inputs []*Input
 }
 
+func (this *Type2NodeReader) Name() string {
+	return "Type2NodeReader"
+}
+
 func (this *Type2NodeReader) GetProduct() smn_analysis.ProductItf {
 	return this.Result
 }
@@ -99,6 +108,10 @@ func (this *Type2NodeReader) Clean() {
 type Type3NodeReader struct {
 	Result *Output
 	inputs []*Input
+}
+
+func (this *Type3NodeReader) Name() string {
+	return "Type3NodeReader"
 }
 
 func (this *Type3NodeReader) GetProduct() smn_analysis.ProductItf {

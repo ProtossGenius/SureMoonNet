@@ -1,10 +1,11 @@
 package main
 
 import (
-	"basis/smn_file"
 	"flag"
 	"os"
 	"strings"
+
+	"github.com/ProtossGenius/SureMoonNet/basis/smn_file"
 )
 
 func check(err error) {
@@ -19,7 +20,7 @@ func main() {
 	deep := flag.Bool("deep", false, "is deep")
 	flag.Parse()
 	expList := strings.Split(*exp, ",")
-	smn_file.DeepTraversalDir(*path, func(p string, info os.FileInfo) int {
+	smn_file.DeepTraversalDir(*path, func(p string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if info.IsDir() && !*deep {
 			return smn_file.FILE_DO_FUNC_RESULT_NO_DEAL
 		}
