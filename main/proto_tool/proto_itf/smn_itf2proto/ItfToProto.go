@@ -82,7 +82,7 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 }
 
 func main() {
-	i := flag.String("i", "./src/rpc_itf/", "rpc interface dir.")
+	i := flag.String("i", "./rpc_itf/", "rpc interface dir.")
 	o := flag.String("o", "./datas/proto/", "rpc needs proto output.")
 	flag.Parse()
 	err := os.MkdirAll(*o, os.ModePerm)
