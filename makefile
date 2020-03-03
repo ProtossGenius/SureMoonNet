@@ -51,6 +51,7 @@ clean:
 	rm -rf ./rpc_nitf
 	rm -rf ./pbr
 	rm -rf ./pb/rip_rpc_itf ./pb/smn_dict
+	rm -rf ./cpppb
 	
 test: itf2proto proto_compile go_protoread itf2rpc
 	go run ./test/smn_net_rpc/test.go
