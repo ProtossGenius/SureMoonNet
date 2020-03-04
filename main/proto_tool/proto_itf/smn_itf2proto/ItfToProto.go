@@ -35,13 +35,13 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 		if typ == "net.Conn" {
 			return
 		}
-		list := strings.Split(typ, ".")
-		if len(list) == 1 {
+		nameList := strings.Split(typ, ".")
+		if len(nameList) == 1 {
 			return
 		}
-		if !impMap[list[0]] {
-			impts.WriteTail(fmt.Sprintf("import \"%s.proto\";", list[0]) + "\n")
-			impMap[list[0]] = true
+		if !impMap[nameList[0]] {
+			impts.WriteTail(fmt.Sprintf("import \"%s.proto\";", nameList[0]) + "\n")
+			impMap[nameList[0]] = true
 		}
 	}
 	w.Append(impts)

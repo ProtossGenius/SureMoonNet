@@ -109,13 +109,13 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 				ib.WriteLine("_e = fmt.Errorf(\"%%v\", err)")
 				b.WriteLine("}()")
 			}
-			b.WriteLine("m := smn_pbr.GetMsgByDict(c.Msg,smn_dict.EDict(c.Dict))")
+			b.WriteLine("_m := smn_pbr.GetMsgByDict(c.Msg,smn_dict.EDict(c.Dict))")
 			sb := b.AddBlock("switch smn_dict.EDict(c.Dict)") //sb -> switch block
 			for _, f := range itf.Functions {
 				cb := sb.AddBlock("case smn_dict.EDict_rip_%s_%s_%s_Prm:", itf.Package, itf.Name, f.Name)
 				cb.Imports("rip_" + itf.Package)
 				cb.WriteLine("_d = smn_dict.EDict_rip_%s_%s_%s_Ret", itf.Package, itf.Name, f.Name)
-				cb.WriteLine("msg := m.(*rip_%s.%s_%s_Prm)", itf.Package, itf.Name, f.Name)
+				cb.WriteLine("_msg := _m.(*rip_%s.%s_%s_Prm)", itf.Package, itf.Name, f.Name)
 				rets := ""
 				for i := 0; i < len(f.Returns); i++ {
 					if i != 0 {
@@ -123,13 +123,16 @@ func writeSvrRpcFile(path string, list []*smn_pglang.ItfDef) {
 					}
 					rets += fmt.Sprintf("p%d", i)
 				}
-				cb.WriteToNewLine("%s := this.itf.%s(", rets, f.Name)
+				if rets != "" {
+					rets += " :="
+				}
+				cb.WriteToNewLine("%s this.itf.%s(", rets, f.Name)
 				for i, r := range f.Params {
 					if i != 0 {
 						cb.Write(", ")
 					}
 					if strings.TrimSpace(r.Type) != "net.Conn" {
-						pv, usmn := goi64toi(r.Type, "msg."+smn_str.InitialsUpper(r.Var))
+						pv, usmn := goi64toi(r.Type, "_msg."+smn_str.InitialsUpper(r.Var))
 						if usmn {
 							cb.Imports("smn_rpc")
 						}
@@ -235,7 +238,7 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 						rpcRes += ", "
 					}
 					resList += rp.Type
-					pv, usmn := goi64toi(rp.Type, "res."+smn_str.InitialsUpper(rp.Var))
+					pv, usmn := goi64toi(rp.Type, "_res."+smn_str.InitialsUpper(rp.Var))
 					rpcRes += pv
 					if usmn {
 						gof.Imports("smn_rpc")
@@ -244,17 +247,17 @@ func writeClientRpcFile(path string, list []*smn_pglang.ItfDef) {
 				b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, resList)
 				b.WriteLine("this.lock.Lock()")
 				b.WriteLine("defer this.lock.Unlock()")
-				b.WriteLine("msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
-				b.WriteLine("this.conn.WriteCall(int32(smn_dict.EDict_rip_%s_%s_%s_Prm), msg)", itf.Package, itf.Name, f.Name)
+				b.WriteLine("_msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
+				b.WriteLine("this.conn.WriteCall(int32(smn_dict.EDict_rip_%s_%s_%s_Prm), _msg)", itf.Package, itf.Name, f.Name)
 				if haveConn {
 					b.WriteLine("%s(this.conn.GetConn())", connFunc)
 				}
-				b.WriteLine("rm, err := this.conn.ReadRet()")
-				b.WriteLine("if err != nil{\n\tpanic(err)\n}")
-				b.WriteLine("if rm.Err{\n\tpanic(string(rm.Msg))\n}")
-				b.WriteLine("res := &rip_%s.%s_%s_Ret{}", itf.Package, itf.Name, f.Name)
-				b.WriteLine("err = proto.Unmarshal(rm.Msg, res)")
-				b.WriteLine("if err != nil{\n\tpanic(err)\n}")
+				b.WriteLine("_rm, _err := this.conn.ReadRet()")
+				b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
+				b.WriteLine("if _rm.Err{\n\tpanic(string(_rm.Msg))\n}")
+				b.WriteLine("_res := &rip_%s.%s_%s_Ret{}", itf.Package, itf.Name, f.Name)
+				b.WriteLine("_err = proto.Unmarshal(_rm.Msg, _res)")
+				b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
 				b.WriteLine("return %s", rpcRes)
 			}
 		}

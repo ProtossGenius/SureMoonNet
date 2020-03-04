@@ -7,7 +7,7 @@ import (
 
 	"github.com/ProtossGenius/SureMoonNet/rpc_nitf/cltrpc/clt_rpc_rpc_itf"
 	"github.com/ProtossGenius/SureMoonNet/rpc_nitf/svrrpc/svr_rpc_rpc_itf"
-	"github.com/ProtossGenius/SureMoonNet/test/rpc_itf"
+	"github.com/ProtossGenius/SureMoonNet/test/rpc_itfs/rpc_itf"
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_net"
 	"github.com/ProtossGenius/SureMoonNet/smn/net_libs/smn_rpc"
