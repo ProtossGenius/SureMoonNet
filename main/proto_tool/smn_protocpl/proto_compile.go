@@ -12,7 +12,10 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/smn/analysis/proto_msg_map"
 )
 
-var comp string
+var (
+	comp       string
+	protocPath string
+)
 
 func checkerr(err error) {
 	if err != nil {
@@ -20,6 +23,7 @@ func checkerr(err error) {
 	}
 }
 
+//生成字典协议
 func dict(in string) {
 	list, _, err := proto_msg_map.Dict(in)
 	file, err := smn_file.CreateNewFile(in + "smn_dict.proto")
@@ -46,23 +50,17 @@ func getPkg(path string) string {
 	return ""
 }
 
-func main() {
-	p := flag.String("p", "protoc", "protoc's path")
-	o := flag.String("o", "./pb/", "output path")
-	i := flag.String("i", "./datas/proto/", "input dir path.")
-	ep := flag.String("ep", "", "export path.")
-	lang := flag.String("lang", "go", "output language, cpp/csharp/java/javanano/objc/python/ruby")
-	flag.Parse()
-	extPath := strings.Replace(*ep, "\\", "/", -1) + "/" + strings.Replace(*o, "./", "", -1)
-	ignoreDir := strings.Split(extPath, "/")[0]
-	err := os.MkdirAll(*o, os.ModePerm)
-	checkerr(err)
-	comp = "--" + *lang + "_out=%s" //"--go_out=%s"
-	dict(*i)
-	smn_file.DeepTraversalDir(*i, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
+type compileFunc func(in, out, exportPath, ignoreDir string)
+
+var CompileMap = map[string]compileFunc{
+	"cpp": CppCompile,
+}
+
+func DefautCompile(in, out, extPath, ignoreDir string) {
+	smn_file.DeepTraversalDir(in, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".proto") {
-			op := *i + "/temp/" + getPkg(path)
-			op2 := *i + "/temp/" + extPath + getPkg(path)
+			op := in + "/temp/" + getPkg(path)
+			op2 := in + "/temp/" + extPath + getPkg(path)
 			os.MkdirAll(op, os.ModePerm)
 			os.MkdirAll(op2, os.ModePerm)
 			data, err := smn_file.FileReadAll(path)
@@ -77,8 +75,8 @@ func main() {
 					nl = strings.Split(nl[6:], ";")[0]
 					nl = strings.Replace(nl, "\"", "", -1)
 					nl = strings.TrimSpace(nl)
-					if smn_file.IsFileExist(*i + "/" + nl) {
-						line = strings.Replace(line, nl, extPath+getPkg(*i+"/"+nl)+"/"+nl, -1)
+					if smn_file.IsFileExist(in + "/" + nl) {
+						line = strings.Replace(line, nl, extPath+getPkg(in+"/"+nl)+"/"+nl, -1)
 					}
 				}
 				file.WriteString(line + "\n")
@@ -89,15 +87,14 @@ func main() {
 		}
 		return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 	})
-	smn_file.DeepTraversalDir(*i+"/temp/", func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
+	smn_file.DeepTraversalDir(in+"/temp/", func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if info.IsDir() && info.Name() == ignoreDir {
 			return smn_file.FILE_DO_FUNC_RESULT_NO_DEAL
 		}
 		if strings.HasSuffix(info.Name(), ".proto") {
 			var stderr bytes.Buffer
-			c := exec.Command(*p, fmt.Sprintf(comp, *o), "-I", *i+"/temp/", path)
+			c := exec.Command(protocPath, fmt.Sprintf(comp, out), "-I", in+"/temp/", path)
 			c.Stderr = &stderr
-			//c := exec.Command(*p, fmt.Sprintf(comp, *o, *i, path))
 			err := c.Run()
 			if err != nil {
 				panic(fmt.Errorf("%s: %s", err.Error(), stderr.String()))
@@ -105,5 +102,43 @@ func main() {
 		}
 		return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 	})
-	os.RemoveAll(*i + "/temp")
+	os.RemoveAll(in + "/temp")
+}
+
+func CppCompile(in, out, extPath, ignoreDir string) {
+	smn_file.DeepTraversalDir(in, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
+		if info.IsDir() && info.Name() == ignoreDir {
+			return smn_file.FILE_DO_FUNC_RESULT_NO_DEAL
+		}
+		if strings.HasSuffix(info.Name(), ".proto") {
+			var stderr bytes.Buffer
+			c := exec.Command(protocPath, fmt.Sprintf(comp, out), "-I", in, path)
+			c.Stderr = &stderr
+			err := c.Run()
+			if err != nil {
+				panic(fmt.Errorf("%s: %s", err.Error(), stderr.String()))
+			}
+		}
+		return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
+	})
+}
+
+func main() {
+	flag.StringVar(&protocPath, "p", "protoc", "protoc's path")
+	o := flag.String("o", "./pb/", "output path")
+	i := flag.String("i", "./datas/proto/", "input dir path.")
+	ep := flag.String("ep", "", "export path.")
+	lang := flag.String("lang", "go", "output language, cpp/csharp/java/javanano/objc/python/ruby")
+	flag.Parse()
+	extPath := strings.Replace(*ep, "\\", "/", -1) + "/" + strings.Replace(*o, "./", "", -1)
+	ignoreDir := strings.Split(extPath, "/")[0]
+	err := os.MkdirAll(*o, os.ModePerm)
+	checkerr(err)
+	comp = "--" + *lang + "_out=%s" //"--go_out=%s"
+	dict(*i)
+	if f, ok := CompileMap[*lang]; ok {
+		f(*i, *o, extPath, ignoreDir)
+	} else {
+		DefautCompile(*i, *o, extPath, ignoreDir)
+	}
 }
