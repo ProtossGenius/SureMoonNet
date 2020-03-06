@@ -9,3 +9,6 @@ datas/proto/rip_rpc_itf.proto
 rpc_nitf/
 pbr/
 temp/
+go.mod
+go.sum
+
