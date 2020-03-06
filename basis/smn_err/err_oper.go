@@ -25,5 +25,7 @@ type OnErrFunc func(err error)
 var OnErr = DftOnErr
 
 func DftOnErr(err error) {
-	panic(err)
+	if err != nil {
+		panic(err)
+	}
 }
