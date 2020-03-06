@@ -33,10 +33,10 @@ func (this *SmnFlag) RegisterBool(name string, val *bool, ad ActionDo) {
 
 func (this *SmnFlag) Parse(args []string) {
 	for name, valReg := range this.SFValRegMap {
-		if *(valReg.StrPtr) == "" && !*(valReg.BoolPtr) {
+		if valReg.StrPtr != nil && *(valReg.StrPtr) == "" {
 			continue
 		}
-		if valReg.Func == nil {
+		if !*(valReg.BoolPtr) || valReg.Func == nil {
 			continue
 		}
 		fmt.Println("dealing funcs .... ", name)
