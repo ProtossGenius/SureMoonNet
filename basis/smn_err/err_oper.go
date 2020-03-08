@@ -9,7 +9,7 @@ func noerr(err error) bool {
 }
 
 type ErrDeal struct {
-	onErr OnErrFunc
+	onErr OnErr
 }
 
 func (this *ErrDeal) OnErr(err error) {
@@ -20,9 +20,7 @@ func NewErrDeal() *ErrDeal {
 	return &ErrDeal{onErr: DftOnErr}
 }
 
-type OnErrFunc func(err error)
-
-var OnErr = DftOnErr
+type OnErr func(err error)
 
 func DftOnErr(err error) {
 	if err != nil {
