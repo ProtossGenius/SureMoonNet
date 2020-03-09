@@ -31,16 +31,22 @@ func (this *SmnFlag) RegisterBool(name string, val *bool, ad ActionDo) {
 	this.SFValRegMap[name] = &SFvalReg{BoolPtr: val, Func: ad}
 }
 
-func (this *SmnFlag) Parse(args []string) {
+func (this *SmnFlag) Parse(args []string, ed *smn_err.ErrDeal) {
 	for name, valReg := range this.SFValRegMap {
-		if valReg.StrPtr != nil && *(valReg.StrPtr) == "" {
+		if valReg.Func == nil {
 			continue
 		}
-		if !*(valReg.BoolPtr) || valReg.Func == nil {
-			continue
+		if valReg.StrPtr != nil {
+			if *(valReg.StrPtr) == "" {
+				continue
+			}
+		} else if valReg.BoolPtr != nil {
+			if !*(valReg.BoolPtr) {
+				continue
+			}
 		}
 		fmt.Println("dealing funcs .... ", name)
 		err := valReg.Func(this, args)
-		smn_err.OnErr(err)
+		ed.OnErr(err)
 	}
 }
