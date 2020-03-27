@@ -27,7 +27,7 @@ func (this *sFvalReg) GetValue(str string) {
 	}
 }
 
-type ActionDo func(sf *smnFlag, args []string) error
+type ActionDo func(args []string) error
 
 func newsmnFlag() *smnFlag {
 	res := &smnFlag{SFValRegMap: map[string]*sFvalReg{}}
@@ -50,11 +50,11 @@ func (this *smnFlag) RegisterBool(name string, val *bool, useage string, ad Acti
 	this.SFValRegMap[name] = &sFvalReg{BoolPtr: val, Func: ad}
 }
 
-func (this *smnFlag) RegisterBool(name string, val *bool, useage string, ad ActionDo) {
+func RegisterBool(name string, val *bool, useage string, ad ActionDo) {
 	_smnFlag.RegisterBool(name, val, useage, ad)
 }
 
-func (this *smnFlag) Parse(args []string, ed *smn_err.ErrDeal) {
+func Parse(args []string, ed *smn_err.ErrDeal) {
 	if !flag.Parsed() {
 		flag.Parse()
 	}
@@ -105,7 +105,7 @@ func (this *smnFlag) Parse(args []string, ed *smn_err.ErrDeal) {
 			}
 		}
 		fmt.Println("dealing funcs .... ", name)
-		err := valReg.Func(this, newArgs)
+		err := valReg.Func(newArgs)
 		ed.OnErr(err)
 	}
 }
