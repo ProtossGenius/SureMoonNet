@@ -8,17 +8,17 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_err"
 )
 
-type SmnFlag struct {
-	SFValRegMap map[string]*SFvalReg
+type smnFlag struct {
+	SFValRegMap map[string]*sFvalReg
 }
 
-type SFvalReg struct {
+type sFvalReg struct {
 	StrPtr  *string
 	BoolPtr *bool
 	Func    ActionDo
 }
 
-func (this *SFvalReg) GetValue(str string) {
+func (this *sFvalReg) GetValue(str string) {
 	if this.StrPtr != nil {
 		*this.StrPtr = str
 	}
@@ -27,29 +27,46 @@ func (this *SFvalReg) GetValue(str string) {
 	}
 }
 
-type ActionDo func(sf *SmnFlag, args []string) error
+type ActionDo func(sf *smnFlag, args []string) error
 
-func NewSmnFlag() *SmnFlag {
-	res := &SmnFlag{SFValRegMap: map[string]*SFvalReg{}}
+func newsmnFlag() *smnFlag {
+	res := &smnFlag{SFValRegMap: map[string]*sFvalReg{}}
 	return res
 }
 
-func (this *SmnFlag) RegisterString(name string, val *string, useage string, ad ActionDo) {
+var _smnFlag = newsmnFlag()
+
+func (this *smnFlag) RegisterString(name string, val *string, useage string, ad ActionDo) {
 	flag.StringVar(val, name, *val, useage)
-	this.SFValRegMap[name] = &SFvalReg{StrPtr: val, Func: ad}
+	this.SFValRegMap[name] = &sFvalReg{StrPtr: val, Func: ad}
 }
 
-func (this *SmnFlag) RegisterBool(name string, val *bool, useage string, ad ActionDo) {
+func RegisterString(name string, val *string, useage string, ad ActionDo) {
+	_smnFlag.RegisterString(name, val, useage, ad)
+}
+
+func (this *smnFlag) RegisterBool(name string, val *bool, useage string, ad ActionDo) {
 	flag.BoolVar(val, name, *val, useage)
-	this.SFValRegMap[name] = &SFvalReg{BoolPtr: val, Func: ad}
+	this.SFValRegMap[name] = &sFvalReg{BoolPtr: val, Func: ad}
 }
 
-func (this *SmnFlag) Parse(args []string, ed *smn_err.ErrDeal) {
+func (this *smnFlag) RegisterBool(name string, val *bool, useage string, ad ActionDo) {
+	_smnFlag.RegisterBool(name, val, useage, ad)
+}
+
+func (this *smnFlag) Parse(args []string, ed *smn_err.ErrDeal) {
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+	_smnFlag.Parse(flag.Args(), ed)
+}
+
+func (this *smnFlag) Parse(args []string, ed *smn_err.ErrDeal) {
 	last := ""
 	newArgs := make([]string, 0, len(args))
 	for _, arg := range args {
 		flag := (arg != "-" && arg[0] == '-')
-		var val *SFvalReg
+		var val *sFvalReg
 		if last != "" {
 			val = this.SFValRegMap[last]
 			if val != nil {
