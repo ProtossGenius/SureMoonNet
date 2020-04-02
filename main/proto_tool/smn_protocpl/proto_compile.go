@@ -26,7 +26,7 @@ func checkerr(err error) {
 //生成字典协议
 func dict(in string) {
 	list, _, err := proto_msg_map.Dict(in)
-	file, err := smn_file.CreateNewFile(in + "smn_dict.proto")
+	file, err := smn_file.CreateNewFile(in + "/smn_dict.proto")
 	checkerr(err)
 	file.WriteString("syntax = \"proto3\";\n;option java_package = \"pb.smn_dict\";\npackage smn_dict;\n\nenum EDict{\n")
 	for _, val := range list {
