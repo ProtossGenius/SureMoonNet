@@ -42,12 +42,13 @@ clean:
 	rm -f datas/proto/rip_ano_rpc_itf.proto
 	rm -f datas/proto/smn_dict.proto
 	rm -f bin/*.exe
+	rm -rf ./javapb
+	rm -rf ./cpppb
 	rm -rf ./cpp_itf
 	rm -rf ./java_itf
 	rm -rf ./rpc_nitf
 	rm -rf ./pbr
 	rm -rf ./pb/rip_rpc_itf ./pb/smn_dict
-	cd cpppb && make clean 
 	rm -rf datas/proto/temp
 	
 test: itf2proto proto_compile go_protoread itf2rpc
