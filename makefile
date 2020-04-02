@@ -10,11 +10,13 @@ c_itf2proto:
 c_itf2rpc_go:
 	cd ./main/proto_tool/proto_lang/smn_itf2rpc_go	&& go install 
 
-c_gitf2ang:
+c_gitf2lang:
 	cd ./main/proto_tool/smn_goitf2lang && go install
 
-gitf2lang: c_gitf2ang
+gitf2lang: c_gitf2lang
 	smn_goitf2lang -lang=cpp -i="./test/rpc_itfs/"
+	cat ./cpp_itf/rpc_itf.h 
+	cat ./cpp_itf/ano_rpc_itf.h
 
 itf2proto: c_itf2proto
 	smn_itf2proto -i "./test/rpc_itfs/" -o ./datas/proto/
@@ -43,6 +45,7 @@ clean:
 	rm -f datas/proto/rip_ano_rpc_itf.proto
 	rm -f datas/proto/smn_dict.proto
 	rm -f bin/*.exe
+	rm -rf ./cpp_itf
 	rm -rf ./rpc_nitf
 	rm -rf ./pbr
 	rm -rf ./pb/rip_rpc_itf ./pb/smn_dict

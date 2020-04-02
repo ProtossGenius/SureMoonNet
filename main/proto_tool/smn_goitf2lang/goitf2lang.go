@@ -11,81 +11,124 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/smn/analysis/smn_rpc_itf"
 )
 
-var CodePkgConst = map[string]string{
-	"cpp": "#include <vector>\n\nnamespace %s{",
+type TypeTrans func(goType string) string
+
+func ToCppType(goType string) string {
+	if strings.HasPrefix(goType, "int") || strings.HasPrefix(goType, "uint") {
+		return goType + "_t"
+	}
+	switch goType {
+	case "int":
+		return "int64_t"
+	case "uint":
+		return "uint64_t"
+	case "float32":
+		return "float"
+	case "float64":
+		return "double"
+	case "string":
+		return "std::string"
+	case "net.Conn":
+		return "smnet::Conn"
+	}
+	if strings.Contains(goType, "*") {
+		goType = strings.Replace(goType, "*", "", -1)
+		goType = strings.Replace(goType, ".", "::", -1)
+	}
+	return goType
 }
 
-var CodeEndConst = map[string]string{
-	"cpp": "}",
+func CppBuiltInType(t string) bool {
+	switch t {
+	case "int", "unsigned int", "int32_t", "uint32_t", "long", "unsigned long", "long long", "unsigned long long",
+		"int8_t", "uint8_t", "int16_t", "uint16_t", "int64_t", "uint64_t", "double", "float", "char", "unsigned char",
+		"short", "unsigned short", "std::size_t":
+		return true
+	}
+	return false
+}
+
+type VarDefTrans func(vd *smn_pglang.VarDef) *smn_pglang.VarDef
+
+func ToCppVarDef(vd *smn_pglang.VarDef) *smn_pglang.VarDef {
+	res := &smn_pglang.VarDef{Var: vd.Var}
+	if vd.ArrSize != 0 {
+		arrV := 0
+		for strings.Contains(vd.Type, "[]") {
+			vd.Type = strings.Replace(vd.Type, "[]", "", 1)
+			arrV++
+		}
+		res.Type = fmt.Sprintf("%s%s%s", strings.Repeat("std::vector<", arrV), ToCppType(vd.Type), strings.Repeat(">", arrV))
+	} else {
+		res.Type = ToCppType(vd.Type)
+	}
+	return res
+}
+
+type ParamTrans func(param []*smn_pglang.VarDef) string
+
+func ToCppParam(param []*smn_pglang.VarDef) string {
+	if len(param) == 0 {
+		return "void"
+	}
+	list := make([]string, len(param))
+	for i, p := range param {
+		p = ToCppVarDef(p)
+		if p.Var == "" {
+			p.Var = fmt.Sprintf("sm_p%d", i)
+		}
+		if CppBuiltInType(p.Type) {
+			list[i] = fmt.Sprintf("%s %s", p.Type, p.Var)
+		} else {
+			list[i] = fmt.Sprintf("const %s& %s", p.Type, p.Var)
+		}
+	}
+	return strings.Join(list, ", ")
+
 }
 
 type ItfTrans func(itf *smn_pglang.ItfDef) string
 
-func Go2Cpp(itf *smn_pglang.ItfDef) string {
-	lines := []string{}
-	add := func(str ...string) {
-		lines = append(lines, str...)
-	}
-	getReturns := func(itfName string, rets []*smn_pglang.VarDef) string {
-		switch len(rets) {
-		case 0:
-			return "void"
-		case 1:
-			if rets[0].ArrSize != 0 {
-				return fmt.Sprintf("std::Vector<%s>", rets[0].Type)
-			}
-			return rets[0].Type
-		default:
-			return "unknow"
-		}
-	}
-	indentation := strings.Repeat("\t", 1)
-	//interface(class) name
-	add(fmt.Sprintf("%sclass %s {", indentation, itf.Name))
+type FuncGoItfToLang func(out, pkg string, list []*smn_pglang.ItfDef)
+
+var GoItfToLang = map[string]FuncGoItfToLang{
+	"cpp": WriteCppPkg,
+}
+
+type FuncWritePkg func(out, pkg string, list []*smn_pglang.ItfDef)
+
+func WriteCppItf(writef func(s string, a ...interface{}), pkg string, itf *smn_pglang.ItfDef) {
+	writef("class %s {\npublic:\n", itf.Name)
+	defer writef("}\n")
 	for _, f := range itf.Functions {
-		indent2 := indentation + "\t"
-		add(fmt.Sprintf(indent2+"virtual %s %s() = 0;", getReturns(itf.Name, f.Returns), f.Name))
+		writef("\tvirtual %s %s(%s) = 0;\n", "to_add", f.Name, ToCppParam(f.Params))
 	}
-
-	//}
-	add(fmt.Sprintf("%s}", indentation))
-	return strings.Join(lines, "\n")
 }
 
-var GoItfToLang = map[string]ItfTrans{
-	"cpp": Go2Cpp,
-}
-
-func writeInterface(lang, out, pkg string, list []*smn_pglang.ItfDef) {
-	converter, ok := GoItfToLang[lang]
-	if !ok {
-		panic(fmt.Errorf(`language %s now not support, you can goto github.com/ProtossGenius/SureMoonNet help write it.
-		go file path is SureMoonNet/main/proto_tool/smn_goitf2lang/goitf2lang.go`, lang))
-	}
+func WriteCppPkg(out, pkg string, list []*smn_pglang.ItfDef) {
 	f, err := smn_file.CreateNewFile(out + "/" + pkg + ".h")
 	checkerr(err)
 	defer f.Close()
-	write := func(str string) {
-		_, err := f.WriteString(str)
+	writef := func(s string, a ...interface{}) {
+		_, err := f.WriteString(fmt.Sprintf(s, a...))
 		checkerr(err)
 	}
-	writeln := func(str string) {
-		write(str + "\n")
-	}
-	writef := func(str string, a ...interface{}) {
-		write(fmt.Sprintf(str, a...))
-	}
-	//write package(in cpp is namespace.)
-	if f, ok := CodePkgConst[lang]; ok {
-		writef(f+"\n", pkg)
-	}
+	writef(`#param once
+namespace %s{
+
+`, pkg)
+	defer writef("}") //namespace
 	for _, itf := range list {
-		writeln(converter(itf))
+		WriteCppItf(writef, pkg, itf)
 	}
-	//write file end.
-	if f, ok := CodeEndConst[lang]; ok {
-		writeln(f)
+}
+
+func writeInterface(lang, out, pkg string, list []*smn_pglang.ItfDef) {
+	f, ok := GoItfToLang[lang]
+	if !ok {
+
 	}
+	f(out, pkg, list)
 }
 
 func checkerr(err error) {
