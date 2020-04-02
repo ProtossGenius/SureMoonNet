@@ -14,10 +14,8 @@ c_gitf2lang:
 	cd ./main/proto_tool/smn_goitf2lang && go install
 
 gitf2lang: c_gitf2lang
-	smn_goitf2lang -lang=cpp -i="./test/rpc_itfs/"
-	cat ./cpp_itf/rpc_itf.h 
-	cat ./cpp_itf/ano_rpc_itf.h
-
+	smn_goitf2lang -lang=cpp -i="./test/rpc_itfs/" -o="./cpp_itf"
+	
 itf2proto: c_itf2proto
 	smn_itf2proto -i "./test/rpc_itfs/" -o ./datas/proto/
 	
@@ -29,7 +27,6 @@ itf2rpc:c_itf2rpc_go
 	
 proto_compile: c_proto_compile
 	smn_protocpl -i ./datas/proto/ -o ./pb/ -ep "github.com/ProtossGenius/SureMoonNet" -lang=go
-	smn_protocpl -i ./datas/proto/ -o ./cpppb/ -ep "github.com/ProtossGenius/SureMoonNet" -lang=cpp
 	
 go_protoread: c_proto_read
 	smn_pr_go -proto "./datas/proto/" -pkgh "pb/" -o "./pbr/read.go" -gopath=$(GOPATH)/src -ext="/github.com/ProtossGenius/SureMoonNet"
@@ -46,6 +43,7 @@ clean:
 	rm -f datas/proto/smn_dict.proto
 	rm -f bin/*.exe
 	rm -rf ./cpp_itf
+	rm -rf ./java_itf
 	rm -rf ./rpc_nitf
 	rm -rf ./pbr
 	rm -rf ./pb/rip_rpc_itf ./pb/smn_dict

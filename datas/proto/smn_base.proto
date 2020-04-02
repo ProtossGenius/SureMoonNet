@@ -1,5 +1,5 @@
 syntax = "proto3";
-
+option java_package = "pb.smn_base";
 package smn_base;
 
 message Call{
