@@ -48,7 +48,7 @@ func ToJavaVarDef(vd *smn_pglang.VarDef) *smn_pglang.VarDef {
 	res.Type = res.Type + strings.Repeat("[]", cnt)
 	return res
 }
-func TojavaRet(param []*smn_file.VarDef, pkg, itfName, fName string) string {
+func TojavaRet(param []*smn_pglang.VarDef, pkg, itfName, fName string) string {
 	if len(param) == 0 {
 		return "void"
 	}
