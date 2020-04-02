@@ -19,7 +19,7 @@ gitf2lang: c_gitf2lang
 itf2proto: c_itf2proto
 	smn_itf2proto -i "./test/rpc_itfs/" -o ./datas/proto/
 	
-install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go smgit smlines
+install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go smgit smlines c_gitf2lang
 	echo "finish"
 
 itf2rpc:c_itf2rpc_go
