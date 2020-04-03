@@ -28,7 +28,7 @@ func writeProto(oPath string, list []*smn_pglang.ItfDef) {
 	writeLine := func(f string, a ...interface{}) {
 		w.WriteTail(fmt.Sprintf(f, a...) + "\n")
 	}
-	w.Append(smn_muti_write_cache.NewStrCache(fmt.Sprintf("syntax = \"proto3\";\noption java_package = \"pb.%s\";\npackage rip_%s;\n", pkg, pkg)))
+	w.Append(smn_muti_write_cache.NewStrCache(fmt.Sprintf("syntax = \"proto3\";\noption java_package = \"pb\";\noption java_outer_classname=\"%s\";\npackage rip_%s;\n", pkg, pkg)))
 	impts := smn_muti_write_cache.NewStrCache()
 	impMap := make(map[string]bool)
 	checkImport := func(typ string) {

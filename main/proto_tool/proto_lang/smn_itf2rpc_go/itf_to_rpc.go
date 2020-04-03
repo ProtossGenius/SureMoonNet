@@ -271,7 +271,7 @@ func main() {
 	o := flag.String("o", "./src/rpc_nitf/", "rpc interface's net accepter, from proto.Message call interface.")
 	s := flag.Bool("s", true, "is product server code")
 	c := flag.Bool("c", true, "is product client code")
-	pkgh := flag.String("pkgh", "github.com/ProtossGenius/SureMoonNet", "package head.")
+	pkgh := flag.String("pkgh", "github.com/ProtossGenius/SureMoonNet", "package head. muti-head split with ',' ")
 	flag.StringVar(&GOPATH, "gopath", "$GOPATH", "gopath")
 	flag.Parse()
 	harr := strings.Split(*pkgh, ",")

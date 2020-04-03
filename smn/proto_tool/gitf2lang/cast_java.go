@@ -48,7 +48,7 @@ func ToJavaVarDef(vd *smn_pglang.VarDef) *smn_pglang.VarDef {
 	res.Type = res.Type + strings.Repeat("[]", cnt)
 	return res
 }
-func TojavaRet(param []*smn_pglang.VarDef, pkg, itfName, fName string) string {
+func ToJavaRet(param []*smn_pglang.VarDef, pkg, itfName, fName string) string {
 	if len(param) == 0 {
 		return "void"
 	}
@@ -87,7 +87,7 @@ func WriteJavaItf(out, pkg string, itf *smn_pglang.ItfDef) {
 	writef("public interface %s {\n", itf.Name)
 	defer writef("}\n")
 	for _, f := range itf.Functions {
-		writef("\t%s %s(%s);\n", "to_add", f.Name, ToJavaParam(f.Params))
+		writef("\t%s %s(%s);\n", ToJavaRet(f.Returns, pkg, itf.Name, f.Name), f.Name, ToJavaParam(f.Params))
 	}
 }
 
