@@ -28,20 +28,14 @@ func decode(bytes []byte) []byte {
 	return res
 }
 
-var maxSize = map[int]int{
-	2048: 245,
-	4096: 501,
-	1024: 117,
-	512:  52,
-}
-
-func printTimeuse(pLen int) {
+func printTimeuse(pLen int) float64 {
+	fmt.Println(pLen)
 	var err error
 	pri, err = rsa.GenerateKey(rand.Reader, pLen)
 	check(err)
 	pub = &pri.PublicKey
 	start := time.Now().UnixNano()
-	bLen := maxSize[pLen]
+	bLen := pLen/8 - 11
 	bts := make([]byte, bLen)
 	size := 1024 * 1024 / bLen
 	oLen := 0
@@ -50,11 +44,24 @@ func printTimeuse(pLen int) {
 	}
 	end := time.Now().UnixNano()
 	cost := end - start
-	fmt.Println(pLen, "speed = ", 1024.0*1024.0/1000.0/(float64(cost)/1000000.0))
+	speed := 1024.0 * 1024.0 / 1000.0 / (float64(cost) / 1000000.0)
+	fmt.Println(pLen, "speed = ", speed)
+	fmt.Println("oLen: ", oLen)
 	fmt.Println("size change: ", float64(oLen)/float64(bLen))
+	return speed
 }
 
 func main() {
-	printTimeuse(1024)
-	printTimeuse(2048)
+	/*
+		var max float64
+		mLen := 0
+		for i := 1024; i < 2048; i++ {
+			s := printTimeuse(i)
+			if s > max {
+				max, mLen = s, i
+			}
+		}
+		fmt.Println(max, "   ", mLen)
+	*/
+	printTimeuse(1280) //max.
 }

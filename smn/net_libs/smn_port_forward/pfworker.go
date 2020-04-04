@@ -12,13 +12,15 @@ const (
 )
 
 type PortForwardWorker struct {
-	in  net.Conn
-	out net.Conn
-	pc  chan int
+	in          net.Conn //client connect in
+	out         net.Conn //connect to outside (remote)
+	pc          chan int
+	CopyFromIn  func(dst io.Writer, src io.Reader) (int64, error)
+	CopyFromOut func(dst io.Writer, src io.Reader) (int64, error)
 }
 
 func NewPortForwardWorker() *PortForwardWorker {
-	return &PortForwardWorker{pc: make(chan int, 2)}
+	return &PortForwardWorker{pc: make(chan int, 2), CopyFromIn: io.Copy, CopyFromOut: io.Copy}
 }
 
 func (this *PortForwardWorker) DoWork(dealErr func(err error)) error {
@@ -35,13 +37,13 @@ func (this *PortForwardWorker) DoWork(dealErr func(err error)) error {
 			this.in.Close()
 			this.out.Close()
 		}()
-		_, err := io.Copy(this.in, this.out)
+		_, err := this.CopyFromOut(this.in, this.out)
 		dealErr(err)
 	}()
 	go func() {
 		this.pc <- 1
 		defer func() { <-this.pc }()
-		_, err := io.Copy(this.out, this.in)
+		_, err := this.CopyFromIn(this.out, this.in)
 		dealErr(err)
 	}()
 	return nil
