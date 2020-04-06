@@ -9,7 +9,8 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/smn/code_file_build"
 )
 
-func GoMsgReader(protoPath, pkgHead, goPath, ext, o string) (err error) {
+func GoMsgReader(protoPath, pkgHead, goPath, ext string) (err error) {
+	o := "./pbr/read.go"
 	err = os.MkdirAll((o)[:strings.LastIndex(o, "/")], os.ModePerm)
 	if err != nil {
 		return err

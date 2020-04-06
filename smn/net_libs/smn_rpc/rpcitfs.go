@@ -15,6 +15,7 @@ func iserr(err error) bool {
 type ConnFunc func(conn net.Conn)
 
 type RpcSvrItf interface {
+	//@ret d -> dict, _p proto.Message, _e error
 	OnMessage(c *smn_base.Call, conn net.Conn) (_d int32, _p proto.Message, _e error)
 }
 

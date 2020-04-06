@@ -21,8 +21,10 @@ func ToJavaType(goType string) string {
 		return "double"
 	case "string":
 		return "String"
+	case "bool":
+		return "boolean"
 	case "net.Conn":
-		return "com.suremoon.net.Conn"
+		return "com.suremoon.net.ConnFunc"
 	}
 	if strings.Contains(goType, "*") {
 		goType = strings.Replace(goType, "*", "", -1)
@@ -53,9 +55,10 @@ func ToJavaRet(param []*smn_pglang.VarDef, pkg, itfName, fName string) string {
 		return "void"
 	}
 	if len(param) == 1 {
-		return ToJavaParam(param)
+		vd := ToJavaVarDef(param[0])
+		return vd.Type
 	}
-	return fmt.Sprintf("pb.%s.%s_%s", pkg, itfName, fName)
+	return fmt.Sprintf("pb.%s.%s_%s_Ret", pkg, itfName, fName)
 }
 func ToJavaParam(param []*smn_pglang.VarDef) string {
 	list := make([]string, len(param))
@@ -71,7 +74,7 @@ func ToJavaParam(param []*smn_pglang.VarDef) string {
 }
 
 func WriteJavaItf(out, pkg string, itf *smn_pglang.ItfDef) {
-	dir := out + "/" + pkg + "/"
+	dir := out + "/smn_itf/" + pkg + "/"
 	if !smn_file.IsFileExist(dir) {
 		err := os.MkdirAll(dir, os.ModePerm)
 		checkerr(err)
@@ -84,6 +87,8 @@ func WriteJavaItf(out, pkg string, itf *smn_pglang.ItfDef) {
 		_, err := f.WriteString(fmt.Sprintf(s, a...))
 		checkerr(err)
 	}
+	writef("package smn_itf.%s;\n//product by auto-code tools, you should never change it .\n//author SureMoonNet\n\n", pkg)
+
 	writef("public interface %s {\n", itf.Name)
 	defer writef("}\n")
 	for _, f := range itf.Functions {

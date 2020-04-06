@@ -10,16 +10,16 @@ c_itf2proto:
 c_itf2rpc_go:
 	cd ./main/proto_tool/proto_lang/smn_itf2rpc_go	&& go install 
 
-c_gitf2lang:
+c_goitf2lang:
 	cd ./main/proto_tool/smn_goitf2lang && go install
 
-gitf2lang: c_gitf2lang
+goitf2lang: c_goitf2lang
 	smn_goitf2lang -lang=cpp -i="./test/rpc_itfs/" -o="./cpp_itf"
 	
 itf2proto: c_itf2proto
 	smn_itf2proto -i "./test/rpc_itfs/" -o ./datas/proto/
 	
-install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go smgit smlines c_gitf2lang
+install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go smgit smlines c_goitf2lang 
 	echo "finish"
 
 itf2rpc:c_itf2rpc_go
@@ -29,7 +29,7 @@ proto_compile: c_proto_compile
 	smn_protocpl -i ./datas/proto/ -o ./pb/ -ep "github.com/ProtossGenius/SureMoonNet" -lang=go
 	
 go_protoread: c_proto_read
-	smn_pr_go -proto "./datas/proto/" -pkgh "pb/" -o "./pbr/read.go" -gopath=$(GOPATH)/src -ext="/github.com/ProtossGenius/SureMoonNet"
+	smn_pr_go -proto "./datas/proto/" -pkgh "pb/"  -gopath=$(GOPATH)/src -ext="/github.com/ProtossGenius/SureMoonNet"
 
 smgit:
 	cd ./main/smn_tool/smgit && go install

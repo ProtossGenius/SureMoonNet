@@ -20,7 +20,6 @@ var ReaderMap = map[string]proto_read_lang.MsgReader{
 func main() {
 	protoPath := flag.String("proto", "./datas/proto/", "proto file's path")
 	pkgHead := flag.String("pkgh", "pb/", "proto's pkg head")
-	o := flag.String("o", "./src/pbr/read.go", "out path.")
 	goPath := flag.String("gopath", "$GOPATH", "go path")
 	ext := flag.String("ext", "", "exturn path.")
 	lang := flag.String("lang", "go", "output coding language.")
@@ -29,6 +28,6 @@ func main() {
 	if !ok {
 		panic(fmt.Errorf("Error! not support language <%s>, you can contact us to achieve. ", *lang))
 	}
-	err := f(*protoPath, *pkgHead, *goPath, *ext, *o)
+	err := f(*protoPath, *pkgHead, *goPath, *ext)
 	checkerr(err)
 }
