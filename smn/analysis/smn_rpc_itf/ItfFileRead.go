@@ -69,6 +69,7 @@ func GetItfListFromDir(path string) (map[string][]*smn_pglang.ItfDef, error) {
 		if info.IsDir() {
 			return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 		}
+		path = strings.Replace(path, "\\", "/", -1)
 		if strings.HasSuffix(path, ".go") {
 			var r []*smn_pglang.ItfDef
 			r, err = GetItfList(path)
@@ -78,11 +79,12 @@ func GetItfListFromDir(path string) (map[string][]*smn_pglang.ItfDef, error) {
 			if len(r) == 0 {
 				return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 			}
-			if rList, ok := res[path]; ok {
+			pkgPath := path[:strings.LastIndex(path, "/")]
+			if rList, ok := res[pkgPath]; ok {
 				rList = append(rList, r...)
-				res[path] = rList
+				res[pkgPath] = rList
 			} else {
-				res[path] = r
+				res[pkgPath] = r
 			}
 		}
 		return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
