@@ -1,12 +1,13 @@
 package smn_rpc_itf
 
 import (
+	"os"
+	"strings"
+
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis_go/line_analysis"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_file"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_str"
-	"os"
-	"strings"
 )
 
 func getPkg(lines []string) string {
@@ -60,7 +61,7 @@ func GetItfList(path string) ([]*smn_pglang.ItfDef, error) {
 	return res, nil
 }
 
-//result map : package -> []*smn_pglang.ItfDef
+//result map : path -> []*smn_pglang.ItfDef
 func GetItfListFromDir(path string) (map[string][]*smn_pglang.ItfDef, error) {
 	res := make(map[string][]*smn_pglang.ItfDef)
 	var err error
@@ -77,12 +78,11 @@ func GetItfListFromDir(path string) (map[string][]*smn_pglang.ItfDef, error) {
 			if len(r) == 0 {
 				return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 			}
-			pkg := r[0].Package
-			if rList, ok := res[pkg]; ok {
+			if rList, ok := res[path]; ok {
 				rList = append(rList, r...)
-				res[pkg] = rList
+				res[path] = rList
 			} else {
-				res[pkg] = r
+				res[path] = r
 			}
 		}
 		return smn_file.FILE_DO_FUNC_RESULT_DEFAULT

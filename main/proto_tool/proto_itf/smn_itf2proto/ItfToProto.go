@@ -89,7 +89,8 @@ func main() {
 	checkerr(err)
 	itfs, err := smn_rpc_itf.GetItfListFromDir(*i)
 	checkerr(err)
-	for pkg, list := range itfs {
+	for _, list := range itfs {
+		pkg := list[0].Package
 		writeProto(*o+"/rip_"+pkg+".proto", list)
 	}
 }
