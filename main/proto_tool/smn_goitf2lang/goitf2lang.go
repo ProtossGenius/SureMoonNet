@@ -4,23 +4,9 @@ import (
 	"flag"
 	"os"
 
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 	"github.com/ProtossGenius/SureMoonNet/smn/analysis/smn_rpc_itf"
-	"github.com/ProtossGenius/SureMoonNet/smn/proto_tool/gitf2lang"
+	"github.com/ProtossGenius/SureMoonNet/smn/proto_tool/goitf2lang"
 )
-
-var GoItfToLang = map[string]gitf2lang.FuncGoItfToLang{
-	"cpp":  gitf2lang.WriteCppPkg,
-	"java": gitf2lang.WriteJavaPkg,
-}
-
-func writeInterface(lang, out, pkg string, list []*smn_pglang.ItfDef) {
-	f, ok := GoItfToLang[lang]
-	if !ok {
-
-	}
-	f(out, pkg, list)
-}
 
 func checkerr(err error) {
 	if err != nil {
@@ -37,7 +23,8 @@ func main() {
 	checkerr(err)
 	itfs, err := smn_rpc_itf.GetItfListFromDir(*i)
 	checkerr(err)
-	for pkg, list := range itfs {
-		writeInterface(*lang, *o, pkg, list)
+	for _, list := range itfs {
+		pkg := list[0].Package
+		goitf2lang.WriteInterface(*lang, *o, pkg, list)
 	}
 }

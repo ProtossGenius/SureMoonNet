@@ -140,6 +140,12 @@ func CppCompile(in, out, goMoudle, ignoreDir, comp string) error {
 }
 
 func Compile(protoDir, codeOutPath, goMod, lang string) error {
+	if !smn_file.IsFileExist(codeOutPath) {
+		err := os.MkdirAll(codeOutPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
 	Dict(protoDir)
 	comp := "--" + lang + "_out=%s" //"--go_out=%s"
 	extPath := strings.Replace(goMod, "\\", "/", -1) + "/" + strings.Replace(codeOutPath, "./", "", -1)

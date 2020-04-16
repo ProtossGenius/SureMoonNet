@@ -1,20 +1,13 @@
-package gitf2lang
+package goitf2lang
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_file"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 )
-
-func checkerr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-type TypeTrans func(goType string) string
 
 func ToCppType(goType string) string {
 	if strings.HasPrefix(goType, "int") || strings.HasPrefix(goType, "uint") {
@@ -51,8 +44,6 @@ func CppBuiltInType(t string) bool {
 	return false
 }
 
-type VarDefTrans func(vd *smn_pglang.VarDef) *smn_pglang.VarDef
-
 func ToCppVarDef(vd *smn_pglang.VarDef) *smn_pglang.VarDef {
 	res := &smn_pglang.VarDef{Var: vd.Var}
 	if vd.ArrSize != 0 {
@@ -67,8 +58,6 @@ func ToCppVarDef(vd *smn_pglang.VarDef) *smn_pglang.VarDef {
 	}
 	return res
 }
-
-type ParamTrans func(param []*smn_pglang.VarDef) string
 
 func ToCppParam(param []*smn_pglang.VarDef) string {
 	if len(param) == 0 {
@@ -101,22 +90,13 @@ func TooCppRet(param []*smn_pglang.VarDef, pkg, itfName, fName string) string {
 
 }
 
-type ItfTrans func(itf *smn_pglang.ItfDef) string
-
-type FuncGoItfToLang func(out, pkg string, list []*smn_pglang.ItfDef)
-
-type FuncWritePkg func(out, pkg string, list []*smn_pglang.ItfDef)
-
-func WriteCppItf(writef func(s string, a ...interface{}), pkg string, itf *smn_pglang.ItfDef) {
-	writef("class %s {\npublic:\n", itf.Name)
-	defer writef("}\n")
-	for _, f := range itf.Functions {
-		writef("\tvirtual %s %s(%s) = 0;\n", TooCppRet(f.Returns, pkg, itf.Name, f.Name), f.Name, ToCppParam(f.Params))
+func WriteCppItf(out, pkg string, itf *smn_pglang.ItfDef) {
+	dir := out + "/smn_itf/" + pkg + "/"
+	if !smn_file.IsFileExist(dir) {
+		err := os.MkdirAll(dir, os.ModePerm)
+		checkerr(err)
 	}
-}
-
-func WriteCppPkg(out, pkg string, list []*smn_pglang.ItfDef) {
-	f, err := smn_file.CreateNewFile(out + "/" + pkg + ".h")
+	f, err := smn_file.CreateNewFile(dir + itf.Name + ".h")
 	checkerr(err)
 	defer f.Close()
 	writef := func(s string, a ...interface{}) {
@@ -128,8 +108,17 @@ func WriteCppPkg(out, pkg string, list []*smn_pglang.ItfDef) {
 namespace %s{
 
 `, pkg)
-	defer writef("}") //namespace
+	defer writef("}//namespace %s", pkg)
+
+	writef("class %s {\npublic:\n", itf.Name)
+	defer writef("}\n")
+	for _, f := range itf.Functions {
+		writef("\tvirtual %s %s(%s) = 0;\n", TooCppRet(f.Returns, pkg, itf.Name, f.Name), f.Name, ToCppParam(f.Params))
+	}
+}
+
+func WriteCppPkg(out, pkg string, list []*smn_pglang.ItfDef) {
 	for _, itf := range list {
-		WriteCppItf(writef, pkg, itf)
+		WriteCppItf(out, pkg, itf)
 	}
 }

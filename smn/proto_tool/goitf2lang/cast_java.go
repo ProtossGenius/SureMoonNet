@@ -1,4 +1,4 @@
-package gitf2lang
+package goitf2lang
 
 import (
 	"fmt"
@@ -78,7 +78,6 @@ func WriteJavaItf(out, pkg string, itf *smn_pglang.ItfDef) {
 	if !smn_file.IsFileExist(dir) {
 		err := os.MkdirAll(dir, os.ModePerm)
 		checkerr(err)
-
 	}
 	f, err := smn_file.CreateNewFile(dir + itf.Name + ".java")
 	checkerr(err)
