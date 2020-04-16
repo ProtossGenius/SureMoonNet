@@ -26,7 +26,7 @@ itf2rpc:c_itf2rpc_go
 	smn_itf2rpc_go -i "./test/rpc_itfs/" -s -c -o "./rpc_nitf/" -gopath=$(GOPATH)/src
 	
 proto_compile: c_proto_compile
-	smn_protocpl -i ./datas/proto/ -o ./pb/ -ep "github.com/ProtossGenius/SureMoonNet" -lang=go
+	smn_protocpl -i ./datas/proto/ -o ./pb/ -gm "github.com/ProtossGenius/SureMoonNet" -lang=go
 	
 go_protoread: c_proto_read
 	smn_pr_go -proto "./datas/proto/" -pkgh "pb/"  -gopath=$(GOPATH)/src -ext="/github.com/ProtossGenius/SureMoonNet"
