@@ -107,5 +107,6 @@ func (this *smnFlag) Parse(args []string, ed *smn_err.ErrDeal) {
 		fmt.Println("dealing funcs .... ", name)
 		err := valReg.Func(newArgs)
 		ed.OnErr(err)
+		fmt.Println("deal func ", name, " finish.")
 	}
 }

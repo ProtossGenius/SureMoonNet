@@ -183,7 +183,9 @@ func init() {
 	proto.RegisterType((*FPkg)(nil), "smn_base.FPkg")
 }
 
-func init() { proto.RegisterFile("smn_base/smn_base.proto", fileDescriptor_b00eef6af23f64b0) }
+func init() {
+	proto.RegisterFile("smn_base/smn_base.proto", fileDescriptor_b00eef6af23f64b0)
+}
 
 var fileDescriptor_b00eef6af23f64b0 = []byte{
 	// 152 bytes of a gzipped FileDescriptorProto
