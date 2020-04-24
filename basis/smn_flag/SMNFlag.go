@@ -55,9 +55,6 @@ func RegisterBool(name string, val *bool, useage string, ad ActionDo) {
 }
 
 func Parse(args []string, ed *smn_err.ErrDeal) {
-	if !flag.Parsed() {
-		flag.Parse()
-	}
 	_smnFlag.Parse(flag.Args(), ed)
 }
 
