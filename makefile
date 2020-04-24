@@ -48,7 +48,8 @@ clean:
 	rm -rf ./java_itf
 	rm -rf ./rpc_nitf
 	rm -rf ./pbr
-	rm -rf ./pb
+	rm -rf ./pb/rip_rpc_itf
+	rm -rf ./pb/rip_ano_rpc_itf
 	rm -rf datas/proto/temp
 	
 test: itf2proto proto_compile go_protoread itf2rpc
