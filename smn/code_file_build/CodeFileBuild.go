@@ -1,39 +1,49 @@
 package code_file_build
 
 import (
-	"bufio"
 	"fmt"
 	"io"
-	"log"
-	"os"
 	"strings"
 
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis_go/line_analysis"
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_file"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_muti_write_cache"
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_str"
 )
 
 const (
+	//ErrRepeatParse TODO maybe no use.
 	ErrRepeatParse = "ErrRepeatParse"
 )
 
+//BlockContainer who can create/add block.
+type BlockContainer interface {
+	AddBlock(format string, a ...interface{}) *CodeBlock
+}
+
+//CFBImpFunc write import.
 //pkg is package name. for C/C++ is include file name.
 //result is all include(import) line
 //e.g. In C++: pkg = "cstdio" , out is "#include<cstdio>"
 type CFBImpFunc func(pkg string) string
 
+//CppImp import cpp pakcage.
 func CppImp(pkg string) string {
+	if len(pkg) == 0 {
+		return ""
+	}
+
+	if pkg[0] == '"' || pkg[0] == '<' {
+		return "#include " + pkg
+	}
+
 	return "#include <" + pkg + ">"
 }
 
-func GoImp(pkg string) string {
-	return "import \"" + pkg + "\""
-}
-
+//JavaImp import java pkg.
 func JavaImp(pkg string) string {
 	return "import " + pkg + ";"
 }
+
+//CFBPkgFunc about pkg's declear, for cpp is namespace.
+type CFBPkgFunc func(cf *CodeFile, pkg string)
 
 type CodeFile struct {
 	smn_muti_write_cache.FileMutiWriteCacheItf
@@ -43,9 +53,9 @@ type CodeFile struct {
 	writer     io.Writer
 }
 
-func NewCodeFile(pkg string, w io.Writer, f CFBImpFunc, comments ...string) *CodeFile {
-	res := &CodeFile{FileMutiWriteCacheItf: smn_muti_write_cache.NewFileMutiWriteCache(), importable: make(map[string]string), imported: make(map[string]bool), writer: w, importFunc: f}
-	res.WriteHeadLine("package " + pkg)
+func NewCodeFile(pkg string, w io.Writer, impFunc CFBImpFunc, pkgFunc CFBPkgFunc, comments ...string) *CodeFile {
+	res := &CodeFile{FileMutiWriteCacheItf: smn_muti_write_cache.NewFileMutiWriteCache(), importable: make(map[string]string), imported: make(map[string]bool), writer: w, importFunc: impFunc}
+	pkgFunc(res, pkg)
 	res.WriteHeadLine("")
 	for _, comment := range comments {
 		pre := "//"
@@ -109,8 +119,8 @@ type CodeBlock struct {
 	indentation int
 }
 
-func newCodeBlock(def string, fathre *CodeFile, ind int) *CodeBlock {
-	res := &CodeBlock{FileMutiWriteCacheItf: smn_muti_write_cache.NewFileMutiWriteCache(), father: fathre, indentation: ind}
+func newCodeBlock(def string, father *CodeFile, ind int) *CodeBlock {
+	res := &CodeBlock{FileMutiWriteCacheItf: smn_muti_write_cache.NewFileMutiWriteCache(), father: father, indentation: ind}
 	suf := " {"
 	if strings.Contains(def, "{") {
 		suf = ""
@@ -157,72 +167,4 @@ func (this *CodeBlock) AddBlock(format string, a ...interface{}) *CodeBlock {
 	f := newCodeBlock(fmt.Sprintf(format, a...), this.father, this.indentation+1)
 	this.Append(f)
 	return f
-}
-
-//In order to be compatible with the previous code.
-func NewGoFile(pkg string, w io.Writer, comments ...string) *CodeFile {
-	return NewCodeFile(pkg, w, GoImp, comments...)
-}
-
-func LocalImptTarget(goPath string, targetPaths ...string) map[string]string {
-	goPath = smn_str.PathFmt(goPath)
-	for i := range targetPaths {
-		targetPaths[i] = smn_str.PathFmt(targetPaths[i])
-	}
-	res := make(map[string]string)
-	smn_file.DeepTraversalDir(goPath, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
-		if info.IsDir() || !strings.HasSuffix(path, ".go") {
-			return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
-		}
-		if len(targetPaths) != 0 {
-			isInTarget := false
-			for _, targetPath := range targetPaths {
-				if strings.HasPrefix(path, targetPath) {
-					isInTarget = true
-					break
-				}
-			}
-			if !isInTarget {
-				return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
-			}
-		}
-
-		scanner, file, err := smn_file.FileScanner(path)
-		if err != nil {
-			log.Printf("LocalImportable DeepTraversalDir path %s, error %s\n", path, err)
-			return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
-		}
-		scanner.Split(bufio.ScanLines)
-		for scanner.Scan() {
-			line := strings.TrimSpace(scanner.Text())
-			if strings.HasPrefix(line, "package") {
-				line = strings.Split(line[8:], "/")[0]
-				pkg := line_analysis.NotNullSpaceSplit(line)[0]
-				path = smn_str.PathFmt(path)
-				path = strings.Replace(path, goPath, "", -1)
-				path = strings.Replace(path, "\\", "/", -1)
-				path = path[:strings.LastIndex(path, "/")]
-				for strings.HasPrefix(path, "/") {
-					path = path[1:]
-				}
-				pSplit := strings.Split(path, "/")
-				psLen := len(pSplit)
-				somePath := pkg
-				for i := psLen - 2; i >= 0; i-- {
-					somePath = pSplit[i] + "/" + somePath
-					res[somePath] = path
-				}
-				res[pkg] = path
-				break
-			}
-		}
-		file.Close()
-		return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
-	})
-	return res
-
-}
-
-func LocalImportable(goPath string) map[string]string {
-	return LocalImptTarget(goPath, "")
 }
