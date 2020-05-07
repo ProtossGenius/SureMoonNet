@@ -70,8 +70,8 @@ func ffPush() {
 	fmt.Println("make clean")
 	ec("make", "clean")
 	//git add .
-	fmt.Println("git add .")
-	ec("git", "add", ".")
+	fmt.Println("git add -A")
+	ec("git", "add", "-A")
 	//git commit -m
 	fmt.Println("git commit -m ", fmt.Sprintf(`"%s"`, Comment))
 	ec("git", "commit", "-m", fmt.Sprintf(`""%s"`, Comment))
