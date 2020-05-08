@@ -31,19 +31,6 @@ type BlockContainer interface {
 //e.g. In C++: pkg = "cstdio" , out is "#include<cstdio>"
 type CFBImpFunc func(pkg string) string
 
-//CppImp import cpp pakcage.
-func CppImp(pkg string) string {
-	if len(pkg) == 0 {
-		return ""
-	}
-
-	if pkg[0] == '"' || pkg[0] == '<' {
-		return "#include " + pkg
-	}
-
-	return "#include <" + pkg + ">"
-}
-
 //JavaImp import java pkg.
 func JavaImp(pkg string) string {
 	return "import " + pkg + ";"
