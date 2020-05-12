@@ -131,7 +131,7 @@ func (cf *CodeFile) Output() (int, error) {
 //CodeBlock {}.
 type CodeBlock struct {
 	smn_muti_write_cache.FileMutiWriteCacheItf
-	father      *CodeFile
+	codeFile    *CodeFile
 	indentation int
 	BlockStart  string // start of Block such as for cpp/go/java code is "{"
 	BlockEnd    string //end of block, for cpp class is "};"
@@ -141,7 +141,7 @@ type CodeBlock struct {
 
 func newCodeBlock(def string, father *CodeFile, ind int) *CodeBlock {
 	res := &CodeBlock{FileMutiWriteCacheItf: smn_muti_write_cache.NewFileMutiWriteCache(),
-		father: father, indentation: ind, BlockDef: def, BlockStart: "", BlockEnd: "}", ht: false}
+		codeFile: father, indentation: ind, BlockDef: def, BlockStart: "", BlockEnd: "}", ht: false}
 
 	if !strings.Contains(def, "{") {
 		res.BlockStart = "{"
@@ -153,7 +153,7 @@ func newCodeBlock(def string, father *CodeFile, ind int) *CodeBlock {
 //Imports import muti package.
 func (cb *CodeBlock) Imports(imports ...string) {
 	for _, imp := range imports {
-		cb.father.Import(imp)
+		cb.codeFile.Import(imp)
 	}
 }
 
@@ -192,7 +192,7 @@ func (cb *CodeBlock) WriteLine(format string, a ...interface{}) {
 
 //AddBlock add block.
 func (cb *CodeBlock) AddBlock(format string, a ...interface{}) *CodeBlock {
-	f := newCodeBlock(fmt.Sprintf(format, a...), cb.father, cb.indentation+1)
+	f := newCodeBlock(fmt.Sprintf(format, a...), cb.codeFile, cb.indentation+1)
 	cb.Append(f)
 
 	return f
