@@ -29,7 +29,7 @@ proto_compile: c_proto_compile
 	smn_protocpl -i ./datas/proto/ -o ./pb/ -gm "github.com/ProtossGenius/SureMoonNet" -lang=go
 	
 go_protoread: c_proto_read
-	smn_pr_go -proto "./datas/proto/" -pkgh "pb/"  -gopath=$(GOPATH)/src -ext="/github.com/ProtossGenius/SureMoonNet"
+	smn_pr_go -proto "./datas/proto/"  -module "github.com/ProtossGenius/SureMoonNet"
 
 smgit:
 	cd ./main/smn_tool/smgit && go install

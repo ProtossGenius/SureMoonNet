@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -40,22 +39,14 @@ func main() {
 		fullPkg := *pMod + strings.Replace(fullPath, pwdPath, "", -1)
 
 		for _, itf := range list {
-			pkg := itf.Package
-
 			if *s {
-				op := *o + "/svrrpc/svr_rpc_" + pkg + "/"
-				err := os.MkdirAll(op, os.ModePerm)
-				check(err)
-
+				op := *o + "/svrrpc/"
 				err = itf2rpc.Write("go_s", op, *pMod, fullPkg, itf)
 				check(err)
 			}
 
 			if *c {
-				op := *o + "/cltrpc/clt_rpc_" + pkg + "/"
-				err := os.MkdirAll(op, os.ModePerm)
-				check(err)
-
+				op := *o + "/cltrpc/"
 				err = itf2rpc.Write("go_c", op, *pMod, fullPkg, itf)
 				check(err)
 			}

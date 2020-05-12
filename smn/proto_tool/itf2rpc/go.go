@@ -2,6 +2,7 @@ package itf2rpc
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_file"
@@ -69,7 +70,15 @@ func goitoi64(ot, v string) (string, bool) {
 
 //GoSvr write to go server RPC code.
 func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
-	file, err := smn_file.CreateNewFile(path + itf.Name + ".go")
+	realPath := path + "/svr_rpc_" + itf.Package
+	if !smn_file.IsFileExist(realPath) {
+		err := os.MkdirAll(realPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	file, err := smn_file.CreateNewFile(realPath + "/" + itf.Name + ".go")
 	if err != nil {
 		return err
 	}
@@ -168,7 +177,15 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 
 //GoClient interface to go client RPC code.
 func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
-	file, err := smn_file.CreateNewFile(path + itf.Name + ".go")
+	realPath := path + "/clt_rpc_" + itf.Package
+	if !smn_file.IsFileExist(realPath) {
+		err := os.MkdirAll(realPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	file, err := smn_file.CreateNewFile(realPath + "/" + itf.Name + ".go")
 	if err != nil {
 		return err
 	}
