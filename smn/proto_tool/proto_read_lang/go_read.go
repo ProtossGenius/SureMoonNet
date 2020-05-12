@@ -23,7 +23,7 @@ func GoMsgReader(protoPath, pkgHead, goPath, ext string) (err error) {
 	if err != nil {
 		return err
 	}
-	fileWriter := code_file_build.NewGoFile("smn_pbr", file, "product by tools, should not change this file.", "Author: SureMoon", "")
+	fileWriter := code_file_build.NewGoFile("pbr", file, "product by tools, should not change this file.", "Author: SureMoon", "")
 	fileWriter.AddImports(code_file_build.LocalImptTarget(goPath, goPath+ext))
 	fileWriter.Import("github.com/golang/protobuf/proto")
 	fileWriter.Import("pb/smn_dict")

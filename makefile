@@ -23,7 +23,7 @@ install: c_proto_read c_proto_compile c_itf2proto c_itf2rpc_go smgit smlines c_g
 	echo "finish"
 
 itf2rpc:c_itf2rpc_go
-	smn_itf2rpc_go -i "./test/rpc_itfs/" -s -c -o "./rpc_nitf/" -gopath=$(GOPATH)/src
+	smn_itf2rpc_go -i "./test/rpc_itfs/" -s -c -o "./rpc_nitf/" -module="github.com/ProtossGenius/SureMoonNet"
 	
 proto_compile: c_proto_compile
 	smn_protocpl -i ./datas/proto/ -o ./pb/ -gm "github.com/ProtossGenius/SureMoonNet" -lang=go
