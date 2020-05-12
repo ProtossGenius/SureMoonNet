@@ -47,8 +47,7 @@ func main() {
 				err := os.MkdirAll(op, os.ModePerm)
 				check(err)
 
-				f := itf2rpc.TargetMap["go_s"]
-				err = f(op, *pMod, fullPkg, itf)
+				err = itf2rpc.Write("go_s", op, *pMod, fullPkg, itf)
 				check(err)
 			}
 
@@ -57,10 +56,8 @@ func main() {
 				err := os.MkdirAll(op, os.ModePerm)
 				check(err)
 
-				f := itf2rpc.TargetMap["go_c"]
-				err = f(op, *pMod, fullPkg, itf)
+				err = itf2rpc.Write("go_c", op, *pMod, fullPkg, itf)
 				check(err)
-
 			}
 		}
 	}
