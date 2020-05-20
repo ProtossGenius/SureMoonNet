@@ -3,14 +3,14 @@ sure_moon net
 `基于proto的跨语言RPC库`
 
 本库的使用步骤：
-    
+   	--使用ProtossGenius/smntools中提供的smnrpc-autocode，只需要配置一个json文件就可以生成需要的代码（smnrpc-autocode -example提供一份示例配置）。
+ 
     --以下步骤参考makefile中的test--
     1.声明一个Go语言语法的接口，参考：./src/rpc_itf/HelloWorld.go
     2.运行itf2proto工具为上面步骤定义的接口生成proto文件
-    3.运行go_protoread生成proto的读代码
-    4.为proto生成目标语言代码
-    5.运行itf2rpc为接口生成rpc的核心代码
-    6.服务端部分只要实现定义的接口就可以了（如果是跨语言的话应该生成目标语言的接口然后实现），客户端则像是使用本地方
+    3.为proto生成目标语言代码
+    4.运行itf2rpc为接口生成rpc的核心代码
+    5.服务端部分只要实现定义的接口就可以了（如果是跨语言的话应该生成目标语言的接口然后实现），客户端则像是使用本地方
     法一样不需要做任何多余的事情。（参考 ./src/com.suremoon.net/test/smn_net_rpc/test.go）
 
 原理：自动代码生成，为接口的参数和返回自动生成协议文件，然后据此生成rpc实现的具体代码，根据这个原理可以推想本库能跨
