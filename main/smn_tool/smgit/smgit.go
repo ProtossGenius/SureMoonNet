@@ -82,6 +82,10 @@ func ffPush() {
 
 //ffMf init makefile.
 func ffMf() {
+	if smn_file.IsFileExist("./Makefile") || smn_file.IsFileExist("./makefile") {
+		return
+	}
+
 	f, err := smn_file.CreateNewFile("./Makefile")
 	check(err)
 
