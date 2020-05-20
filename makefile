@@ -1,6 +1,3 @@
-c_proto_read:
-	cd ./main/proto_tool/proto_read/smn_pr_go &&  go install
-
 c_proto_compile:
 	cd ./main/proto_tool/smn_protocpl && go install 
 	
@@ -27,9 +24,6 @@ itf2rpc:c_itf2rpc_go
 	
 proto_compile: c_proto_compile
 	smn_protocpl -i ./datas/proto/ -o ./pb/ -gm "github.com/ProtossGenius/SureMoonNet" -lang=go
-	
-go_protoread: c_proto_read
-	smn_pr_go -proto "./datas/proto/"  -module "github.com/ProtossGenius/SureMoonNet"
 
 smgit:
 	cd ./main/smn_tool/smgit && go install
@@ -53,7 +47,10 @@ clean:
 	rm -rf ./pb/smn_dict
 	rm -rf datas/proto/temp
 	
-test: itf2proto proto_compile go_protoread itf2rpc
+test: itf2proto proto_compile itf2rpc
+	go run ./test/smn_net_rpc/test.go
+
+qrun:
 	go run ./test/smn_net_rpc/test.go
 
 nothing:

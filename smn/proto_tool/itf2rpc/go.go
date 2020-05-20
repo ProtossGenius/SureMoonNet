@@ -105,11 +105,21 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 		b := gof.AddBlock("func (this *SvrRpc%s)getEDictList() []smn_dict.EDict", itf.Name)
 		b.WriteLine("return this.dicts")
 	}
+	{ //read proto from bytes
+		for _, f := range itf.Functions {
+			protoType := fmt.Sprintf("rip_%s.%s_%s_Prm", itf.Package, itf.Name, f.Name)
+			b := gof.AddBlock("func ReadEdict_rip_%s_%s_%s_Prm(bytes []byte) *%s",
+				itf.Package, itf.Name, f.Name, protoType)
+			b.WriteLine("msg := &%s{}", protoType)
+			b.WriteLine("err := proto.Unmarshal(bytes, msg)")
+			b.WriteLine("if err != nil { panic(err) }")
+			b.WriteLine("return msg")
+		}
+	}
 	{ // struct get net-package
 		b := gof.AddBlock("func (this *SvrRpc%s)OnMessage(c *smn_base.Call, conn net.Conn)"+
 			" (_d smn_dict.EDict, _p proto.Message, _e error)", itf.Name)
 		b.Imports(SmnBase)
-		b.Imports(module + "/pbr")
 		b.Imports("net")
 		{ // rb = recover func
 			b.WriteLine("defer func() {")
@@ -120,13 +130,12 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 			ib.WriteLine("_e = fmt.Errorf(\"%%v\", err)")
 			b.WriteLine("}()")
 		}
-		b.WriteLine("_m := pbr.GetMsgByDict(c.Msg,smn_dict.EDict(c.Dict))")
 		sb := b.AddBlock("switch smn_dict.EDict(c.Dict)") //sb -> switch block
 		for _, f := range itf.Functions {
 			cb := sb.AddBlock("case smn_dict.EDict_rip_%s_%s_%s_Prm:", itf.Package, itf.Name, f.Name)
+			cb.WriteLine("_msg := ReadEdict_rip_%s_%s_%s_Prm(c.Msg)", itf.Package, itf.Name, f.Name)
 			cb.Imports(module + "/pb/rip_" + itf.Package)
 			cb.WriteLine("_d = smn_dict.EDict_rip_%s_%s_%s_Ret", itf.Package, itf.Name, f.Name)
-			cb.WriteLine("_msg := _m.(*rip_%s.%s_%s_Prm)", itf.Package, itf.Name, f.Name)
 			rets := ""
 			for i := 0; i < len(f.Returns); i++ {
 				if i != 0 {
