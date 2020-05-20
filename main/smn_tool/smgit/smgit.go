@@ -75,7 +75,7 @@ func ffPush() {
 	ec("git", "add", "-A")
 	//git commit -m
 	fmt.Println("git commit -m ", fmt.Sprintf(`"%s"`, Comment))
-	ec("git", "commit", "-m", fmt.Sprintf(`""%s"`, Comment))
+	ec("git", "commit", "-m", fmt.Sprintf(`"%s"`, Comment))
 	fmt.Println("git push")
 	ec("git", "push")
 }
