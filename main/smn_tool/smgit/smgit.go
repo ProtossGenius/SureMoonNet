@@ -23,6 +23,7 @@ const (
 	PUSH = "push"
 	SP   = "sp"
 	RSP  = "rsp"
+	MF   = "mf"
 
 	CfgDir = "~/.smtools/smgit-cfg"
 )
@@ -31,12 +32,12 @@ type FlagFunc func()
 
 type FlagMap map[string]FlagFunc
 
-func (this FlagMap) Register(key string, f FlagFunc) {
-	this[key] = f
+func (fmap FlagMap) Register(key string, f FlagFunc) {
+	fmap[key] = f
 }
 
-func (this FlagMap) Parse(key string) {
-	if f, ok := this[key]; ok {
+func (fmap FlagMap) Parse(key string) {
+	if f, ok := fmap[key]; ok {
 		f()
 	}
 }
@@ -79,6 +80,25 @@ func ffPush() {
 	ec("git", "push")
 }
 
+//ffMf init makefile.
+func ffMf() {
+	f, err := smn_file.CreateNewFile("./Makefile")
+	check(err)
+
+	defer f.Close()
+
+	write := func(str string) {
+		_, err := f.WriteString(str)
+		check(err)
+	}
+
+	write(`test:
+
+clean:
+
+`)
+}
+
 func ffSp() {
 	//create directory
 	if !smn_file.IsFileExist(CfgDir) {
@@ -90,35 +110,43 @@ func ffSp() {
 func ffRsp() {
 }
 
-var flagMap = FlagMap{
-	PULL: ffPull,
-	PUSH: ffPush,
-	SP:   ffSp,
-	RSP:  ffRsp,
-}
-
 func check(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 func main() {
+	//flagMap init.
+	var flagMap = FlagMap{
+		PULL: ffPull,
+		PUSH: ffPush,
+		SP:   ffSp,
+		RSP:  ffRsp,
+		MF:   ffMf,
+	}
+
 	flag.StringVar(&Comment, "m", "", "comment message for push")
 	flag.Parse()
+
 	doFlag := false
 	args := flag.Args()
 	fmt.Println(args)
 	argMap := make(map[string]bool, len(args))
+
 	if Comment != "" {
 		argMap[PUSH] = true
 	}
+
 	for _, arg := range args {
 		argMap[arg] = true
 	}
+
 	for arg := range argMap {
 		flagMap.Parse(arg)
+
 		doFlag = true
 	}
+
 	if !doFlag {
 		fmt.Println(`smgit pull : pull from remote
 ------------equals--------------
@@ -136,9 +164,9 @@ func main() {
 ################################ wait for add
 		sp  : startup pull
 		rsp : remove statup pull		
-$ git status 
-`)
+$ git status`)
 		ec("git", "status")
 	}
+
 	fmt.Println("################### smgit FINISH")
 }
