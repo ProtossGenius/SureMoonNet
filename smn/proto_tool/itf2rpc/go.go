@@ -123,7 +123,7 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 	}
 	{ // struct get net-package
 		b := gof.AddBlock("func (this *SvrRpc%s)OnMessage(c *smn_base.Call, conn net.Conn)"+
-			" (_d smn_dict.EDict, _p proto.Message, _e error)", itf.Name)
+			" (_d int32, _p proto.Message, _e error)", itf.Name)
 		b.Imports(SmnBase)
 		b.Imports("net")
 		{ // rb = recover func
@@ -140,7 +140,7 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 			cb := sb.AddBlock("case smn_dict.EDict_rip_%s_%s_%s_Prm:", itf.Package, itf.Name, f.Name)
 			cb.WriteLine("_msg := ReadEdict_rip_%s_%s_%s_Prm(c.Msg)", itf.Package, itf.Name, f.Name)
 			cb.Imports(module + "/pb/rip_" + itf.Package)
-			cb.WriteLine("_d = smn_dict.EDict_rip_%s_%s_%s_Ret", itf.Package, itf.Name, f.Name)
+			cb.WriteLine("_d = int32(smn_dict.EDict_rip_%s_%s_%s_Ret)", itf.Package, itf.Name, f.Name)
 			rets := ""
 			for i := 0; i < len(f.Returns); i++ {
 				if i != 0 {

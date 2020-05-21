@@ -3,14 +3,14 @@ package main
 import (
 	"fmt"
 	"net"
-	"rpc_itf"
-	"rpc_nitf/clientrpc"
-	"rpc_nitf/svrrpc"
 	"time"
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_net"
-	"github.com/ProtossGenius/SureMoonNet/smn/net_libs/smn_rpc"
+	"github.com/ProtossGenius/SureMoonNet/rpc_nitf/cltrpc/clt_rpc_rpc_itf"
+	"github.com/ProtossGenius/SureMoonNet/rpc_nitf/svrrpc/svr_rpc_rpc_itf"
 	"github.com/ProtossGenius/SureMoonNet/smn/net_libs/muti_service"
+	"github.com/ProtossGenius/SureMoonNet/smn/net_libs/smn_rpc"
+	"github.com/ProtossGenius/SureMoonNet/test/rpc_itfs/rpc_itf"
 )
 
 func check(err error) {
@@ -54,12 +54,13 @@ func RunSvr() {
 }
 
 func main() {
-	//defer func() {
-	//	err := recover()
-	//	if err != nil {
-	//		fmt.Println(err)
-	//	}
-	//}()
+	defer func() {
+		err := recover()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
+
 	go RunSvr()
 	time.Sleep(1 * time.Second)
 	conn, err := net.Dial("tcp", "127.0.0.1:1000")

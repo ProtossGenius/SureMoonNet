@@ -1,12 +1,14 @@
 package smn_stream
 
 import (
-	"time"
 	"sync"
 	"sync/atomic"
+	"time"
+
 	"github.com/pkg/errors"
 )
 
+//ErrByteCacheClosed try call a closed ByteCache.
 const ErrByteCacheClosed = "ErrByteCacheClosed"
 
 type iByteCache interface {
@@ -16,39 +18,47 @@ type iByteCache interface {
 	SetTimeOut(t time.Duration)
 }
 
+//NewByteCache .
 func NewByteCache(writeTime int, timeout time.Duration) *ByteCache {
 	return &ByteCache{c: &byteCacheWork{TimeOut: timeout, recvChan: make(chan []byte, writeTime)}}
 }
 
+//ByteCache .
 type ByteCache struct {
 	c iByteCache
 }
 
-func (this *ByteCache) Write(msg []byte) {
-	this.c.Write(msg)
+//Write .
+func (cache *ByteCache) Write(msg []byte) {
+	cache.c.Write(msg)
 }
 
-func (this *ByteCache) Read(b []byte) (n int, err error) {
-	return this.c.Read(b)
+//Read .
+func (cache *ByteCache) Read(b []byte) (n int, err error) {
+	return cache.c.Read(b)
 }
 
-func (this *ByteCache) Len() int {
-	return this.c.Len()
+//Len .
+func (cache *ByteCache) Len() int {
+	return cache.c.Len()
 }
 
-func (this *ByteCache) Close() {
-	this.c = bcc
+//Close .
+func (cache *ByteCache) Close() {
+	cache.c = bcc
 }
 
-func (this *ByteCache) ErrorClose(err error) {
-	this.c = &byteCacheClose{err:err}
+//ErrorClose .
+func (cache *ByteCache) ErrorClose(err error) {
+	cache.c = &byteCacheClose{err: err}
 }
 
-func (this *ByteCache) SetTimeOut(t time.Duration) {
-	this.c.SetTimeOut(t)
+//SetTimeOut how much time can wait.
+func (cache *ByteCache) SetTimeOut(t time.Duration) {
+	cache.c.SetTimeOut(t)
 }
 
-var bcc = &byteCacheClose{err:errors.New(ErrByteCacheClosed)}
+var bcc = &byteCacheClose{err: errors.New(ErrByteCacheClosed)}
 
 type byteCacheClose struct {
 	err error
@@ -81,9 +91,9 @@ func (this *byteCacheWork) SetTimeOut(t time.Duration) {
 func minInt(a, b int) int {
 	if a < b {
 		return a
-	} else {
-		return b
 	}
+
+	return b
 }
 
 func (this *byteCacheWork) Write(msg []byte) {
@@ -91,39 +101,47 @@ func (this *byteCacheWork) Write(msg []byte) {
 	atomic.AddInt32(&this.len, int32(len(msg)))
 }
 
-//copy `size` byte from fConn.last to b[start:]
+//readCopy copy `size` byte from fConn.last to b[start:].
 func (this *byteCacheWork) readCopy(b []byte, start, size int) (copyLen int) {
 	copyLen = minInt(size, len(this.last))
 	pos := start
+
 	for i := 0; i < copyLen; i++ {
 		b[pos] = this.last[i]
 		pos++
 	}
+
 	this.last = this.last[copyLen:]
+
 	return
 }
+
 func (this *byteCacheWork) Read(b []byte) (n int, err error) {
 	this.readLock.Lock()
 	defer this.readLock.Unlock()
 	defer func() {
 		atomic.AddInt32(&this.len, int32(-n))
 	}()
+
 	size := len(b)
 	acLen := 0
-	tout := time.Tick(this.TimeOut)
+	tout := time.NewTicker(this.TimeOut)
+
 	for size > 0 {
 		copyLen := this.readCopy(b, acLen, size)
 		acLen += copyLen
 		size -= copyLen
+
 		if size == 0 {
 			break
 		}
 		select {
 		case this.last = <-this.recvChan:
-		case <-tout:
+		case <-tout.C:
 			return acLen, nil
 		}
 	}
+
 	return len(b), nil
 }
 

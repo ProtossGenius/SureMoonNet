@@ -2,6 +2,7 @@ package muti_service
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -15,15 +16,19 @@ import (
 )
 
 const (
+	//ErrServerNumNotExist don's exist that server num.
 	ErrServerNumNotExist = "ErrServerNumNotExist :[%d]"
 )
 
+//FConnFactory .
 type FConnFactory func(no int64, mgr *ServiceManager, desc string, localAddr, remoteAddr net.Addr) ForwardConnItf
 
 func newDftFConn(no int64, mgr *ServiceManager, desc string, localAddr, remoteAddr net.Addr) ForwardConnItf {
-	return &FConn{no: no, mgr: mgr, desc: desc, localAddr: localAddr, remoteAddr: remoteAddr, cache: smn_stream.NewByteCache(1000, 1*time.Second)}
+	return &FConn{no: no, mgr: mgr, desc: desc, localAddr: localAddr, remoteAddr: remoteAddr,
+		cache: smn_stream.NewByteCache(1000, 1*time.Second)}
 }
 
+//ServiceManager .
 type ServiceManager struct {
 	OnErr        smn_err.OnErr
 	TimeOut      time.Duration
@@ -36,7 +41,9 @@ type ServiceManager struct {
 }
 
 func NewServiceManager(conn net.Conn) *ServiceManager {
-	return &ServiceManager{conn: conn, close: make(chan int, 1), regMap: make(map[int64]ForwardConnItf), sendChan: make(chan *smn_base.FPkg, 1024), FConnFactory: newDftFConn, OnErr: smn_err.DftOnErr, TimeOut: 1 * time.Second}
+	return &ServiceManager{conn: conn, close: make(chan int, 1), regMap: make(map[int64]ForwardConnItf),
+		sendChan: make(chan *smn_base.FPkg, 1024), FConnFactory: newDftFConn, OnErr: smn_err.DftOnErr,
+		TimeOut: 1 * time.Second}
 }
 
 func (this *ServiceManager) Send(p *smn_base.FPkg) {
@@ -75,6 +82,7 @@ func (this *ServiceManager) GetFConn(no int64) (ForwardConnItf, bool) {
 	this.mapLock.Lock()
 	defer this.mapLock.Unlock()
 	c, ok := this.regMap[no]
+
 	return c, ok
 }
 
@@ -84,21 +92,24 @@ func (this *ServiceManager) Drop(no int64) {
 	delete(this.regMap, no)
 }
 
-func sendFPkg(c net.Conn, msg *smn_base.FPkg) error {
+func sendFPkg(c io.Writer, msg *smn_base.FPkg) error {
 	bts, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}
+
 	_, err = smn_net.WriteBytes(bts, c)
+
 	return err
 }
 
 func (this *ServiceManager) Work() {
 	go func() {
+	nodeFor:
 		for {
 			select {
 			case <-this.close:
-				break
+				break nodeFor
 			case msg := <-this.sendChan:
 				err := sendFPkg(this.conn, msg)
 				if err != nil {
@@ -106,7 +117,8 @@ func (this *ServiceManager) Work() {
 				}
 			}
 		}
-		this.conn.Close()
+
+		_ = this.conn.Close()
 	}()
 	go func() {
 		for {
@@ -114,11 +126,14 @@ func (this *ServiceManager) Work() {
 			if err != nil {
 				this.OnErr(err)
 			}
+
 			pkg := &smn_base.FPkg{}
 			err = proto.Unmarshal(bts, pkg)
+
 			if err != nil {
 				this.OnErr(err)
 			}
+
 			this.recv(pkg)
 		}
 	}()
@@ -155,7 +170,9 @@ func (this *FConn) Write(b []byte) (n int, err error) {
 	if this.err != nil {
 		return 0, this.err
 	}
+
 	this.SendToSM(b)
+
 	return 0, nil
 }
 
@@ -167,6 +184,7 @@ func (this *FConn) ErrClose(err error) {
 func (this *FConn) Close() error {
 	this.mgr.Drop(this.no)
 	this.cache.Close()
+
 	return nil
 }
 

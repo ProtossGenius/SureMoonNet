@@ -49,6 +49,7 @@ clean:
 	
 test: itf2proto proto_compile itf2rpc
 	go run ./test/smn_net_rpc/test.go
+	go run ./test/smn_net/muti_service/ms.go
 
 qrun:
 	go run ./test/smn_net_rpc/test.go
