@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ProtossGenius/SureMoonNet/basis/smn_exec"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_file"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_str"
@@ -78,10 +79,14 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 		}
 	}
 
-	file, err := smn_file.CreateNewFile(realPath + "/" + itf.Name + ".go")
+	filePath := realPath + "/" + itf.Name + ".go"
+	file, err := smn_file.CreateNewFile(filePath)
+
 	if err != nil {
 		return err
 	}
+
+	defer smn_exec.EasyDirExec("./", "gofmt", "-w", filePath)
 	defer file.Close()
 
 	gof := code_file_build.NewGoFile("svr_rpc_"+itf.Package, file,
@@ -194,10 +199,14 @@ func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 		}
 	}
 
-	file, err := smn_file.CreateNewFile(realPath + "/" + itf.Name + ".go")
+	filePath := realPath + "/" + itf.Name + ".go"
+	file, err := smn_file.CreateNewFile(filePath)
+
 	if err != nil {
 		return err
 	}
+
+	defer smn_exec.EasyDirExec("./", "gofmt", "-w", filePath)
 	defer file.Close()
 
 	gof := code_file_build.NewGoFile("clt_rpc_"+itf.Package, file, "Product by SureMoonNet",
