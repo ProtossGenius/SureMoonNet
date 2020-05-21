@@ -72,13 +72,15 @@ func (this DictConstList) Swap(i, j int) {
 	this[i], this[j] = this[j], this[i]
 }
 func Dict(in string) (list DictConstList, const2Name map[string]string, err error) {
-	data, err := smn_file.FileReadAll(in + "/dict.proto")
+	dictFileName := "smn_dict.proto"
 	contMap := make(map[int]bool)
 	oldDef := make(map[string]int)
 	newDef := make(map[string]int)
 	const2Name = make(map[string]string)
 	newDef["None"] = 0
 	max := 0
+	data, err := smn_file.FileReadAll(in + "/" + dictFileName)
+
 	if err == nil { //if not found dict.proto, the error not nil, but is right.
 		lines := strings.Split(string(data), "\n")
 		for _, line := range lines {
@@ -112,7 +114,7 @@ func Dict(in string) (list DictConstList, const2Name map[string]string, err erro
 	max++
 	//get all const define
 	smn_file.DeepTraversalDir(in, func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
-		if !info.IsDir() && !strings.Contains(info.Name(), "dict.proto") {
+		if !info.IsDir() && !strings.Contains(info.Name(), dictFileName) {
 			var pm *ProtoMsgMap
 			pm, err = GetProtoMsgMap(path)
 			if err != nil {
