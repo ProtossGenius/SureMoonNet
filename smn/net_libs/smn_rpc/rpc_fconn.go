@@ -19,11 +19,11 @@ func AccpterRun(adapter MessageAdapterItf, rpcSvr RpcSvrItf) {
 	}
 }
 
-func ServiceManagerRegister(mgr *muti_service.ServiceManager, no int64, desc string, rpcSvr RpcSvrItf) (conn muti_service.ForwardConnItf, isExist bool) {
-	conn, isExist = mgr.Regitster(no, desc)
+func ServiceManagerRegister(mgr *muti_service.ServiceManager, no int64, desc string, rpcSvr RpcSvrItf) (isExist bool) {
+	conn, isExist := mgr.Regitster(no, desc)
 	if isExist {
-		return
+		return true
 	}
 	go AccpterRun(NewMessageAdapter(conn), rpcSvr)
-	return conn, isExist
+	return false
 }
