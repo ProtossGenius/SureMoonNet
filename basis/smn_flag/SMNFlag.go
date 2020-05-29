@@ -3,7 +3,6 @@ package smn_flag
 import (
 	"flag"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_err"
@@ -35,8 +34,8 @@ func (this *sFvalReg) GetValue() string {
 		return *this.StrPtr
 	}
 
-	if this.BoolPtr != nil {
-		return strconv.FormatBool(*this.BoolPtr)
+	if this.BoolPtr != nil && *this.BoolPtr {
+		return "true"
 	}
 
 	return ""
