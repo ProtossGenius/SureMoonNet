@@ -11,13 +11,12 @@ import (
 
 func ToCppType(goType string) string {
 	if strings.HasPrefix(goType, "int") || strings.HasPrefix(goType, "uint") {
+		if goType == "int" || goType == "uint" {
+			return goType + "64" + "_t"
+		}
 		return goType + "_t"
 	}
 	switch goType {
-	case "int":
-		return "int64_t"
-	case "uint":
-		return "uint64_t"
 	case "float32":
 		return "float"
 	case "float64":
@@ -79,14 +78,15 @@ func ToCppParam(param []*smn_pglang.VarDef) string {
 
 }
 
-func TooCppRet(param []*smn_pglang.VarDef, pkg, itfName, fName string) string {
-	if len(param) == 0 {
+func TooCppRet(rets []*smn_pglang.VarDef, pkg, itfName, fName string) string {
+	if len(rets) == 0 {
 		return "void"
 	}
-	if len(param) == 1 {
-		return ToCppParam(param)
+	if len(rets) == 1 {
+		p := ToCppVarDef(rets[0])
+		return p.Type
 	}
-	return fmt.Sprintf("%s::%s_%s_Ret", pkg, itfName, fName)
+	return fmt.Sprintf("rip_%s::%s_%s_Ret", pkg, itfName, fName)
 
 }
 
@@ -103,8 +103,17 @@ func WriteCppItf(out, pkg string, itf *smn_pglang.ItfDef) {
 		_, err := f.WriteString(fmt.Sprintf(s, a...))
 		checkerr(err)
 	}
-	writef(`#param once
+	writef(`#pragma once
 #include<vector>
+`)
+
+	for _, f := range itf.Functions {
+		if len(f.Returns) > 1 {
+			writef("#include \"pb/rip_%s.pb.h\"", pkg)
+		}
+	}
+
+	writef(`
 namespace %s{
 
 `, pkg)
