@@ -7,24 +7,28 @@ import (
 type OnNodeRead func(stateNode *StateNode, input InputItf) (isEnd bool, err error)
 
 type StateNodeReader interface {
-	//reader's name
+	//Name reader's name.
 	Name() string
-	//only see if should stop read.
+	//PreRead only see if should stop read.
 	PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error)
-	//real read. even isEnd == true the input be readed.
+	//Read real read. even isEnd == true the input be readed.
 	Read(stateNode *StateNode, input InputItf) (isEnd bool, err error)
-	//return result
+	//GetProduct return result.
 	GetProduct() ProductItf
-	//let the Reader like new.  it will be call before first Read
+	//Clean let the Reader like new.  it will be call before first Read.
 	Clean()
 }
 
+//InputItf StateMachine's input.
 type InputItf interface {
+	//Copy should give copy to prevent user change it.
 	Copy() InputItf
 }
 
+//ProductItf StateMachine's result.
 type ProductItf interface {
-	ProductType() int // usally should >= 0
+	//ProductType result's type. usally should >= 0.
+	ProductType() int
 }
 
 type ProductEnd struct{}
@@ -33,7 +37,7 @@ func (*ProductEnd) ProductType() int {
 	return -1
 }
 
-// get product type from default
+//ProductDftNode get product type from default.
 type ProductDftNode struct {
 	Reason string
 }
