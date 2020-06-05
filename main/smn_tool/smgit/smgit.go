@@ -96,7 +96,11 @@ func ffMf() {
 		check(err)
 	}
 
-	write(`test:
+	write(`debug:
+
+qrun:
+
+test:
 
 clean:
 
