@@ -4,8 +4,10 @@ import (
 	"fmt"
 )
 
+//OnNodeRead node read. maybe no use now?
 type OnNodeRead func(stateNode *StateNode, input InputItf) (isEnd bool, err error)
 
+//StateNodeReader state node reader.
 type StateNodeReader interface {
 	//Name reader's name.
 	Name() string
@@ -31,8 +33,10 @@ type ProductItf interface {
 	ProductType() int
 }
 
+//ProductEnd last result.
 type ProductEnd struct{}
 
+//ProductType result's type. end's id = -1.
 func (*ProductEnd) ProductType() int {
 	return -1
 }
@@ -89,29 +93,38 @@ type StateMachine struct {
 	//when a StateNode end, will let nowStateNOde = DfeStateNode.
 	//StateNode's PreRead should always return (isEnd=false, err=nil)
 	DftStateNode *StateNode
+	//isEnd read's result.
+	isEnd bool
 }
 
 func (this *StateMachine) Read(input InputItf) error {
+	var err error
 	if this.nowStateNode == nil {
 		this.useDefault()
 	}
-	isEnd, err := this.nowStateNode.PreRead(input)
+	this.isEnd, err = this.nowStateNode.PreRead(input)
 	if iserr(err) {
 		return err
 	}
-	if isEnd {
+	if this.isEnd {
 		this.useDefault()
 	}
-	isEnd, err = this.nowStateNode.Read(input)
+	this.isEnd, err = this.nowStateNode.Read(input)
 	if iserr(err) {
 		return err
 	}
-	if isEnd {
+	if this.isEnd {
 		this.useDefault()
 	}
 	return nil
 }
 
+//IsEnd return the last read status.
+func (this *StateMachine) IsEnd() bool {
+	return this.isEnd
+}
+
+//Init base on new(StateMachine).Init() write style.
 func (this *StateMachine) Init() *StateMachine {
 	if this.ChanSize <= 0 {
 		this.ChanSize = 10000
