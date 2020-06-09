@@ -46,46 +46,53 @@ type ProductDftNode struct {
 	Reason string
 }
 
+//ProductType .
 func (p *ProductDftNode) ProductType() int {
 	return -2
 }
 
+//StateNode StateMachine's node.
 type StateNode struct {
 	sm     *StateMachine
 	Result ProductItf
 	reader StateNodeReader
 }
 
-func (this *StateNode) Init(sm *StateMachine, SNReader StateNodeReader) *StateNode {
-	this.reader = SNReader
-	this.sm = sm
-	return this
+//Init .
+func (sn *StateNode) Init(sm *StateMachine, SNReader StateNodeReader) *StateNode {
+	sn.reader = SNReader
+	sn.sm = sm
+	return sn
 }
 
-// !!!Warning!!!
+//PreRead !!!Warning!!!
 //should not deal the input in this function.
 //only check if end.
-func (this *StateNode) PreRead(input InputItf) (isEnd bool, err error) {
-	return this.reader.PreRead(this, input)
+func (sn *StateNode) PreRead(input InputItf) (isEnd bool, err error) {
+	return sn.reader.PreRead(sn, input)
 }
 
-func (this *StateNode) Read(input InputItf) (isEnd bool, err error) {
-	return this.reader.Read(this, input)
+func (sn *StateNode) Read(input InputItf) (isEnd bool, err error) {
+	return sn.reader.Read(sn, input)
 }
 
-func (this *StateNode) CleanReader() {
-	this.Result = nil
-	this.reader.Clean()
+//CleanReader run clean for reader.
+func (sn *StateNode) CleanReader() {
+	sn.Result = nil
+	sn.reader.Clean()
 }
 
-func (this *StateNode) GetProduct() {
-	this.Result = this.reader.GetProduct()
+//GetProduct get result.
+func (sn *StateNode) GetProduct() {
+	sn.Result = sn.reader.GetProduct()
 }
 
-func (this *StateNode) ChangeStateNode(nextNode *StateNode) {
-	this.sm.changeStateNode(nextNode)
+//ChangeStateNode .
+func (sn *StateNode) ChangeStateNode(nextNode *StateNode) {
+	sn.sm.changeStateNode(nextNode)
 }
 
+//StateMachine state machine to formulate a state-tree and get result by input.
 type StateMachine struct {
 	ChanSize     int
 	resultChan   chan ProductItf
@@ -93,75 +100,93 @@ type StateMachine struct {
 	//when a StateNode end, will let nowStateNOde = DfeStateNode.
 	//StateNode's PreRead should always return (isEnd=false, err=nil)
 	DftStateNode *StateNode
-	//isEnd read's result.
-	isEnd bool
+	//isPreadEnd pre-read's result.
+	isPreadEnd bool
+	//isReadend read's result.
+	isReadEnd bool
 }
 
-func (this *StateMachine) Read(input InputItf) error {
+func (sm *StateMachine) Read(input InputItf) error {
 	var err error
-	if this.nowStateNode == nil {
-		this.useDefault()
+	if sm.nowStateNode == nil {
+		sm.useDefault()
 	}
-	this.isEnd, err = this.nowStateNode.PreRead(input)
+	sm.isPreadEnd, err = sm.nowStateNode.PreRead(input)
+
 	if iserr(err) {
 		return err
 	}
-	if this.isEnd {
-		this.useDefault()
+
+	if sm.isPreadEnd {
+		sm.useDefault() // now Reader is DftStateNodeReader, and it don't have PreRead so can call Read direct.
 	}
-	this.isEnd, err = this.nowStateNode.Read(input)
+
+	sm.isReadEnd, err = sm.nowStateNode.Read(input)
 	if iserr(err) {
 		return err
 	}
-	if this.isEnd {
-		this.useDefault()
+	if sm.isReadEnd {
+		sm.useDefault()
 	}
 	return nil
 }
 
-//IsEnd return the last read status.
-func (this *StateMachine) IsEnd() bool {
-	return this.isEnd
+//IsPreadEnd return the last read status.
+func (sm *StateMachine) IsPreadEnd() bool {
+	return sm.isPreadEnd
+}
+
+//IsReadEnd is read end.
+func (sm *StateMachine) IsReadEnd() bool {
+	return sm.isReadEnd
+}
+
+//IsEndHappened if have end then return true.
+func (sm *StateMachine) IsEndHappened() bool {
+	return sm.IsPreadEnd() || sm.IsReadEnd()
 }
 
 //Init base on new(StateMachine).Init() write style.
-func (this *StateMachine) Init() *StateMachine {
-	if this.ChanSize <= 0 {
-		this.ChanSize = 10000
+func (sm *StateMachine) Init() *StateMachine {
+	if sm.ChanSize <= 0 {
+		sm.ChanSize = 10000
 	}
-	this.resultChan = make(chan ProductItf, this.ChanSize)
-	return this
+	sm.resultChan = make(chan ProductItf, sm.ChanSize)
+	return sm
 }
 
-func (this *StateMachine) changeStateNode(node *StateNode) {
-	if this.nowStateNode != nil && this.nowStateNode != this.DftStateNode {
-		beforeNode := this.nowStateNode
+func (sm *StateMachine) changeStateNode(node *StateNode) {
+	if sm.nowStateNode != nil && sm.nowStateNode != sm.DftStateNode {
+		beforeNode := sm.nowStateNode
 		beforeNode.GetProduct()
 		if beforeNode.Result != nil {
-			this.resultChan <- beforeNode.Result
+			sm.resultChan <- beforeNode.Result
 		}
 	}
-	this.nowStateNode = node
+	sm.nowStateNode = node
 }
 
-func (this *StateMachine) End() {
-	this.nowStateNode.GetProduct()
-	this.resultChan <- this.nowStateNode.Result
-	if this.nowStateNode.Result.ProductType() == -1 {
+//End input end-input.
+func (sm *StateMachine) End() {
+	sm.nowStateNode.GetProduct()
+	sm.resultChan <- sm.nowStateNode.Result
+	if sm.nowStateNode.Result.ProductType() == -1 {
 		return
 	}
-	this.resultChan <- &ProductEnd{}
+	sm.resultChan <- &ProductEnd{}
 }
 
-func (this *StateMachine) useDefault() {
-	this.changeStateNode(this.DftStateNode)
-	this.DftStateNode.CleanReader()
+func (sm *StateMachine) useDefault() {
+	sm.changeStateNode(sm.DftStateNode)
+	sm.DftStateNode.CleanReader()
 }
 
-func (this *StateMachine) GetResultChan() <-chan ProductItf {
-	return this.resultChan
+//GetResultChan .
+func (sm *StateMachine) GetResultChan() <-chan ProductItf {
+	return sm.resultChan
 }
 
+//DftStateNodeReader choice node.
 type DftStateNodeReader struct {
 	StateNodeReader
 	sm        *StateMachine
@@ -170,70 +195,75 @@ type DftStateNodeReader struct {
 	first     bool //is first call after clean
 }
 
-//reader's name
-func (d *DftStateNodeReader) Name() string {
+//Name reader's name.
+func (dsn *DftStateNodeReader) Name() string {
 	return "DftStateNodeReader"
 }
 
-func (this *DftStateNodeReader) GetProduct() ProductItf {
-	if len(this.LiveMap) == 0 {
+//GetProduct .
+func (dsn *DftStateNodeReader) GetProduct() ProductItf {
+	if len(dsn.LiveMap) == 0 {
 		return &ProductEnd{}
 	}
 	res := &ProductDftNode{Reason: "Err when GetProduct ProductDftNode, MutiNode Lived they're  :"}
-	for key := range this.LiveMap {
+	for key := range dsn.LiveMap {
 		res.Reason += ", " + key.reader.Name()
 	}
 
 	return res
 }
 
+//NewDftStateNodeReader .
 func NewDftStateNodeReader(machine *StateMachine) *DftStateNodeReader {
 	dft := &DftStateNodeReader{sm: machine, SNodeList: make([]*StateNode, 0), LiveMap: make(map[*StateNode]byte)}
 	machine.DftStateNode = (&StateNode{}).Init(machine, dft)
 	return dft
 }
 
-func (this *DftStateNodeReader) Register(node StateNodeReader) {
-	this.SNodeList = append(this.SNodeList, (&StateNode{}).Init(this.sm, node))
+//Register .
+func (dsn *DftStateNodeReader) Register(node StateNodeReader) {
+	dsn.SNodeList = append(dsn.SNodeList, (&StateNode{}).Init(dsn.sm, node))
 }
 
-func (this *DftStateNodeReader) Clean() {
-	for k := range this.LiveMap {
-		delete(this.LiveMap, k)
+//Clean .
+func (dsn *DftStateNodeReader) Clean() {
+	for k := range dsn.LiveMap {
+		delete(dsn.LiveMap, k)
 	}
-	for _, node := range this.SNodeList {
+	for _, node := range dsn.SNodeList {
 		node.CleanReader()
 	}
-	this.first = true
+	dsn.first = true
 }
 
-func (this *DftStateNodeReader) PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+//PreRead DftStateNodeReader don't do PreRead, because it should deal all registed reader.
+func (dsn *DftStateNodeReader) PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
 	return false, nil
 }
 
-func (this *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
-	if this.first {
-		for _, val := range this.SNodeList {
-			this.LiveMap[val] = 0
+func (dsn *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+	if dsn.first {
+		for _, val := range dsn.SNodeList {
+			dsn.LiveMap[val] = 0
 		}
-		this.first = false
+		dsn.first = false
 	}
 	liveCnt := 0
 	endCnt := 0
 	errStr := ""
 	var nextNode *StateNode
-	for k := range this.LiveMap {
+	for k := range dsn.LiveMap {
 		kend, kerr := k.PreRead(input.Copy())
 		if iserr(kerr) {
 			errStr += kerr.Error()
 		}
 		if kend || iserr(kerr) {
-			delete(this.LiveMap, k)
+			delete(dsn.LiveMap, k)
 			continue
 		}
 		kend, kerr = k.Read(input.Copy())
 		if iserr(kerr) {
-			delete(this.LiveMap, k)
+			delete(dsn.LiveMap, k)
 			continue
 		}
 		liveCnt++
@@ -251,13 +281,13 @@ func (this *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEn
 	if endCnt > 1 {
 		return true, fmt.Errorf(ErrTooMuchMatchStateNode)
 	}
-	if len(this.LiveMap) == 1 {
+	if len(dsn.LiveMap) == 1 {
 		stateNode.ChangeStateNode(nextNode)
 		if endCnt == 1 {
 			return true, nil
 		}
 	}
-	if endCnt != 0 && len(this.LiveMap) != 1 { // todo: as success return?
+	if endCnt != 0 && len(dsn.LiveMap) != 1 { // todo: as success return?
 		return true, fmt.Errorf(ErrTooMuchMatchStateNodeWhenHasEnd)
 	}
 	return false, nil
