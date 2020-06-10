@@ -20,12 +20,21 @@ b - 3
 */
 
 type Input struct {
-	smn_analysis.InputItf
 	Input rune
 }
+
+//Copy should give copy to prevent user change it.
+func (i *Input) Copy() smn_analysis.InputItf {
+	return &Input{Input: i.Input}
+}
+
 type Output struct {
-	smn_analysis.ProductItf
 	Result int
+}
+
+//ProductType result's type. usually should >= 0.
+func (o *Output) ProductType() int {
+	return o.Result
 }
 
 type Type1NodeReader struct {
@@ -128,6 +137,7 @@ func (this *Type3NodeReader) PreRead(stateNode *smn_analysis.StateNode, input sm
 }
 
 func (this *Type3NodeReader) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+	fmt.Println("save Result is .. ", stateNode.Result)
 	rInp := input.(*Input)
 	this.inputs = append(this.inputs, rInp)
 	this.Result = &Output{Result: 3}
@@ -144,32 +154,113 @@ func check(err error) {
 	}
 }
 
-func main() {
+func testDefault() {
 	var err error
+
 	sm := (&smn_analysis.StateMachine{}).Init()
 	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
 	dftSNR.Register(&Type1NodeReader{})
 	dftSNR.Register(&Type2NodeReader{})
 	dftSNR.Register(&Type3NodeReader{})
+
 	read := func(cs string) {
 		for _, c := range cs {
 			err = sm.Read(&Input{Input: c})
 			check(err)
 		}
 	}
+
 	read("abacacabbbb")
+
 	go func() {
 		for {
-			time.Sleep(1)
+			time.Sleep(time.Second)
 		}
 	}()
+
 	result := sm.GetResultChan()
+
 	for {
 		res := <-result
 		if res == nil {
 			continue
 		}
+
 		out := res.(*Output)
 		fmt.Println(out.Result)
 	}
+}
+
+func testList() {
+	var err error
+
+	sm := (&smn_analysis.StateMachine{}).Init()
+	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
+	dftSNR.Register(smn_analysis.NewStateNodeListReader(&Type1NodeReader{}, &Type2NodeReader{}, &Type3NodeReader{}))
+
+	read := func(cs string) {
+		for _, c := range cs {
+			err = sm.Read(&Input{Input: c})
+			check(err)
+		}
+	}
+
+	read("abacb")
+
+	go func() {
+		for {
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	result := sm.GetResultChan()
+
+	for {
+		res := <-result
+		if res == nil {
+			continue
+		}
+
+		out := res.(*Output)
+		fmt.Println(out)
+	}
+}
+
+func testSelect() {
+	var err error
+
+	sm := (&smn_analysis.StateMachine{}).Init()
+	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
+	dftSNR.Register(smn_analysis.NewStateNodeSelectReader(&Type1NodeReader{}, &Type2NodeReader{}, &Type3NodeReader{}))
+
+	read := func(cs string) {
+		for _, c := range cs {
+			err = sm.Read(&Input{Input: c})
+			check(err)
+		}
+	}
+
+	read("abacb")
+
+	go func() {
+		for {
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	result := sm.GetResultChan()
+
+	for {
+		res := <-result
+		if res == nil {
+			continue
+		}
+
+		out := res.(*Output)
+		fmt.Println(out)
+	}
+}
+
+func main() {
+	testSelect()
 }

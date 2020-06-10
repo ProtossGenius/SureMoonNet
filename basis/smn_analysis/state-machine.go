@@ -2,6 +2,7 @@ package smn_analysis
 
 import (
 	"fmt"
+	"strings"
 )
 
 //OnNodeRead node read. maybe no use now?
@@ -56,6 +57,7 @@ type StateNode struct {
 	sm     *StateMachine
 	Result ProductItf
 	reader StateNodeReader
+	Datas  map[string]interface{}
 }
 
 //Init .
@@ -90,6 +92,14 @@ func (sn *StateNode) GetProduct() {
 //ChangeStateNode .
 func (sn *StateNode) ChangeStateNode(nextNode *StateNode) {
 	sn.sm.changeStateNode(nextNode)
+}
+
+//SendProduct send product to StateMachine.
+func (sn *StateNode) SendProduct(result ProductItf) {
+	if result == nil {
+		return
+	}
+	sn.sm.resultChan <- result
 }
 
 //StateMachine state machine to formulate a state-tree and get result by input.
@@ -188,11 +198,9 @@ func (sm *StateMachine) GetResultChan() <-chan ProductItf {
 
 //DftStateNodeReader choice node.
 type DftStateNodeReader struct {
-	StateNodeReader
 	sm        *StateMachine
 	SNodeList []*StateNode
 	LiveMap   map[*StateNode]byte
-	first     bool //is first call after clean
 }
 
 //Name reader's name.
@@ -221,19 +229,17 @@ func NewDftStateNodeReader(machine *StateMachine) *DftStateNodeReader {
 }
 
 //Register .
-func (dsn *DftStateNodeReader) Register(node StateNodeReader) {
+func (dsn *DftStateNodeReader) Register(node StateNodeReader) *DftStateNodeReader {
 	dsn.SNodeList = append(dsn.SNodeList, (&StateNode{}).Init(dsn.sm, node))
+	return dsn
 }
 
 //Clean .
 func (dsn *DftStateNodeReader) Clean() {
-	for k := range dsn.LiveMap {
-		delete(dsn.LiveMap, k)
-	}
 	for _, node := range dsn.SNodeList {
 		node.CleanReader()
+		dsn.LiveMap[node] = 0
 	}
-	dsn.first = true
 }
 
 //PreRead DftStateNodeReader don't do PreRead, because it should deal all registed reader.
@@ -242,12 +248,6 @@ func (dsn *DftStateNodeReader) PreRead(stateNode *StateNode, input InputItf) (is
 }
 
 func (dsn *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
-	if dsn.first {
-		for _, val := range dsn.SNodeList {
-			dsn.LiveMap[val] = 0
-		}
-		dsn.first = false
-	}
 	liveCnt := 0
 	endCnt := 0
 	errStr := ""
@@ -291,4 +291,164 @@ func (dsn *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEnd
 		return true, fmt.Errorf(ErrTooMuchMatchStateNodeWhenHasEnd)
 	}
 	return false, nil
+}
+
+/*StateNodeListReader .
+ */
+type StateNodeListReader struct {
+	list   []StateNodeReader
+	ptr    int
+	result ProductItf
+}
+
+//NewStateNodeListReader .
+func NewStateNodeListReader(readers ...StateNodeReader) StateNodeReader {
+	return &StateNodeListReader{list: readers, ptr: 0}
+}
+
+//Name reader's name.
+func (s *StateNodeListReader) Name() string {
+	return "StateNodeListReader"
+}
+
+//Current get current StateNodeReader .
+func (s *StateNodeListReader) Current() StateNodeReader {
+	return s.list[s.ptr]
+}
+
+//Ptr get pointer num.
+func (s *StateNodeListReader) Ptr() int {
+	return s.ptr
+}
+
+//Size get size.
+func (s *StateNodeListReader) Size() int {
+	return len(s.list)
+}
+
+//PreRead only see if should stop read.
+func (s *StateNodeListReader) PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+	current := s.Current()
+	lend, lerr := current.PreRead(stateNode, input)
+	if lerr != nil {
+		return true, lerr
+	}
+	if lend {
+		s.ptr++
+		if s.ptr == s.Size() {
+			stateNode.Result = current.GetProduct()
+			s.result = stateNode.Result
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+//Read real read. even isEnd == true the input be readed.
+func (s *StateNodeListReader) Read(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+	current := s.Current()
+	lend, lerr := current.Read(stateNode, input)
+	if lerr != nil {
+		return true, lerr
+	}
+	if lend {
+		s.ptr++
+		stateNode.Result = current.GetProduct()
+		if s.ptr == s.Size() {
+			s.result = stateNode.Result
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+//GetProduct return result.
+func (s *StateNodeListReader) GetProduct() ProductItf {
+	return s.result
+}
+
+//Clean let the Reader like new.  it will be call before first Read.
+func (s *StateNodeListReader) Clean() {
+	for _, reader := range s.list {
+		reader.Clean()
+	}
+}
+
+//StateNodeSelectReader .
+type StateNodeSelectReader struct {
+	ReaderList []StateNodeReader
+	LiveMap    map[StateNodeReader]bool
+	Result     ProductItf
+}
+
+//NewStateNodeSelectReader .
+func NewStateNodeSelectReader(list ...StateNodeReader) *StateNodeSelectReader {
+	return &StateNodeSelectReader{
+		ReaderList: list,
+		LiveMap:    make(map[StateNodeReader]bool, len(list)),
+	}
+}
+
+//Name reader's name.
+func (s *StateNodeSelectReader) Name() string {
+	return "StateNodeSelectReader"
+}
+
+//PreRead only see if should stop read.
+func (s *StateNodeSelectReader) PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+	errList := []string{}
+	for cr := range s.LiveMap {
+		lend, lerr := cr.PreRead(stateNode, input)
+		if lerr != nil {
+			errList = append(errList, lerr.Error())
+			delete(s.LiveMap, cr)
+			continue
+		}
+
+		if lend {
+			s.Result = cr.GetProduct()
+			return true, nil
+		}
+	}
+	if len(s.LiveMap) == 0 {
+		return true, fmt.Errorf("Error in StateNodeSelectReader, error list : \n%s", strings.Join(errList, "\n"))
+	}
+	return false, nil
+}
+
+//Read real read. even isEnd == true the input be readed.
+func (s *StateNodeSelectReader) Read(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+	errList := []string{}
+	for cr := range s.LiveMap {
+		lend, lerr := cr.Read(stateNode, input)
+		if lerr != nil {
+			errList = append(errList, lerr.Error())
+			delete(s.LiveMap, cr)
+			continue
+		}
+
+		if lend {
+			s.Result = cr.GetProduct()
+			return true, nil
+		}
+	}
+	if len(s.LiveMap) == 0 {
+		return true, fmt.Errorf("Error in StateNodeSelectReader, error list : \n%s", strings.Join(errList, "\n"))
+	}
+	return false, nil
+}
+
+//GetProduct return result.
+func (s *StateNodeSelectReader) GetProduct() ProductItf {
+	return s.Result
+}
+
+//Clean let the Reader like new.  it will be call before first Read.
+func (s *StateNodeSelectReader) Clean() {
+	for _, reader := range s.ReaderList {
+		reader.Clean()
+		s.LiveMap[reader] = true
+	}
+
+	s.Result = nil
 }
