@@ -105,6 +105,7 @@ func WriteCppItf(out, pkg string, itf *smn_pglang.ItfDef) {
 	}
 	writef(`#pragma once
 #include<vector>
+#include"smncpp/socket_itf.h"
 `)
 
 	for _, f := range itf.Functions {
@@ -120,7 +121,7 @@ namespace %s{
 	defer writef("}//namespace %s", pkg)
 
 	writef("class %s {\npublic:\n", itf.Name)
-	defer writef("}\n")
+	defer writef("};\n")
 	for _, f := range itf.Functions {
 		writef("\tvirtual %s %s(%s) = 0;\n", TooCppRet(f.Returns, pkg, itf.Name, f.Name), f.Name, ToCppParam(f.Params))
 	}
