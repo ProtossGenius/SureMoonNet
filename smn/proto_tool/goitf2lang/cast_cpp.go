@@ -91,11 +91,12 @@ func TooCppRet(rets []*smn_pglang.VarDef, pkg, itfName, fName string) string {
 }
 
 func WriteCppItf(out, pkg string, itf *smn_pglang.ItfDef) {
-	dir := out + "/smn_itf/" + pkg + "/"
+	dir := out + "/smn_itf/"
 	if !smn_file.IsFileExist(dir) {
 		err := os.MkdirAll(dir, os.ModePerm)
 		checkerr(err)
 	}
+	dir += pkg + "."
 	f, err := smn_file.CreateNewFile(dir + itf.Name + ".h")
 	checkerr(err)
 	defer f.Close()
