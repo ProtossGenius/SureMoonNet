@@ -67,6 +67,9 @@ func ffPush() {
 	//make test
 	fmt.Println("make test")
 	ec("make", "test")
+	//make install
+	fmt.Println("make install")
+	ec("make", "install")
 	//make clean
 	fmt.Println("make clean")
 	ec("make", "clean")
@@ -101,6 +104,8 @@ func ffMf() {
 qrun:
 
 test:
+
+install:
 
 clean:
 
