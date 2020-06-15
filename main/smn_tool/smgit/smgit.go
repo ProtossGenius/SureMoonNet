@@ -64,12 +64,12 @@ func ffPush() {
 	if Comment == "" {
 		panic(fmt.Errorf("no comment message"))
 	}
-	//make test
-	fmt.Println("make test")
-	ec("make", "test")
 	//make install
 	fmt.Println("make install")
 	ec("make", "install")
+	//make test
+	fmt.Println("make test")
+	ec("make", "test")
 	//make clean
 	fmt.Println("make clean")
 	ec("make", "clean")
