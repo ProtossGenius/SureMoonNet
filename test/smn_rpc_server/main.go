@@ -54,6 +54,9 @@ func AccpterRun(adapter smn_rpc.MessageAdapterItf) {
 		check(err)
 		dict, res, err := rpcSvr.OnMessage(msg, adapter.GetConn())
 
+		if dict == -1 {
+			fmt.Println(dict, "] can't find call. ")
+		}
 		_, err = adapter.WriteRet(dict, res, err)
 		check(err)
 	}
