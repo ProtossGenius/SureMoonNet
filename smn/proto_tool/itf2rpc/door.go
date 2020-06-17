@@ -11,8 +11,9 @@ type FWriteRPC func(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) err
 
 //TargetMap from target to func.
 var TargetMap = map[string]FWriteRPC{
-	"go_s": GoSvr,
-	"go_c": GoClient,
+	"go_s":  GoSvr,
+	"go_c":  GoClient,
+	"cpp_c": CppClient,
 }
 
 //Write itf to rpc.
