@@ -1,10 +1,10 @@
 package smn_net
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
-	"bytes"
 )
 
 func ReadInt64(reader io.Reader) (int64, error) {
@@ -176,9 +176,9 @@ func ReadString(reader io.Reader) (string, error) {
 	return string(bts), err
 }
 
-func WriteBytes(bts []byte, writer io.Writer) (int, error ){
+func WriteBytes(bts []byte, writer io.Writer) (int, error) {
 	blns := len(bts)
-	buffer := bytes.NewBuffer(make([]byte, 0, blns + 8))
+	buffer := bytes.NewBuffer(make([]byte, 0, blns+4))
 	err := WriteInt32(int32(blns), buffer)
 	if iserr(err) {
 		return 0, err

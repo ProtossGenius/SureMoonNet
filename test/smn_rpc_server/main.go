@@ -7,6 +7,7 @@ import (
 
 	"github.com/ProtossGenius/SureMoonNet/rpc_nitf/svrrpc/svr_rpc_rpc_itf"
 	"github.com/ProtossGenius/SureMoonNet/test/rpc_itfs/rpc_itf"
+	"github.com/gogo/protobuf/proto"
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_net"
 	"github.com/ProtossGenius/SureMoonNet/smn/net_libs/smn_rpc"
@@ -47,15 +48,28 @@ func (l *login) Test2(key string, c net.Conn) bool {
 }
 
 func AccpterRun(adapter smn_rpc.MessageAdapterItf) {
+	/*	defer func() {
+		err := recover()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		adapter.Close()
+	}()*/
+
 	rpcSvr := svr_rpc_rpc_itf.NewSvrRpcLogin(&login{})
 
 	for {
 		msg, err := adapter.ReadCall()
-		fmt.Println("get Msg : ", msg.Dict)
+		fmt.Println("get Msg : ", msg)
 		check(err)
 		dict, res, err := rpcSvr.OnMessage(msg, adapter.GetConn())
+		fmt.Println("on Message dict = ", dict, ", res = ", fmt.Sprintf("%v", res), "err = ", err)
+		if res != nil {
+			bts, err := proto.Marshal(res)
+			fmt.Println("res.Length = ", len(bts), "[", bts, "]", err)
+		}
 		check(err)
-
 		_, err = adapter.WriteRet(dict, res, err)
 		check(err)
 	}
@@ -77,7 +91,6 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("server run on port %d\n", *pPort)
-
 	defer func() {
 		err := recover()
 		if err != nil {
