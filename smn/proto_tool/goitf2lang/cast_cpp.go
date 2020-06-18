@@ -9,7 +9,7 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 )
 
-func ToCppType(goType string) string {
+func ToCppType(goType string, clt ...bool) string {
 	if strings.HasPrefix(goType, "int") || strings.HasPrefix(goType, "uint") {
 		if goType == "int" || goType == "uint" {
 			return goType + "64" + "_t"
@@ -24,12 +24,17 @@ func ToCppType(goType string) string {
 	case "string":
 		return "std::string"
 	case "net.Conn":
-		return "smnet::Conn"
+		if len(clt) > 0 && clt[0] {
+			return "std::function<int(std::shared_ptr<smnet::Conn>)>"
+		}
+
+		return "std::shared_ptr<smnet::Conn> "
 	}
 	if strings.Contains(goType, "*") {
 		goType = strings.Replace(goType, "*", "", -1)
 		goType = strings.Replace(goType, ".", "::", -1)
 	}
+
 	return goType
 }
 
@@ -37,45 +42,46 @@ func CppBuiltInType(t string) bool {
 	switch t {
 	case "int", "unsigned int", "int32_t", "uint32_t", "long", "unsigned long", "long long", "unsigned long long",
 		"int8_t", "uint8_t", "int16_t", "uint16_t", "int64_t", "uint64_t", "double", "float", "char", "unsigned char",
-		"short", "unsigned short", "std::size_t":
+		"short", "unsigned short", "std::size_t", "bool":
 		return true
 	}
 	return false
 }
 
-func ToCppVarDef(vd *smn_pglang.VarDef) *smn_pglang.VarDef {
+func ToCppVarDef(vd *smn_pglang.VarDef, clt ...bool) *smn_pglang.VarDef {
 	res := &smn_pglang.VarDef{Var: vd.Var}
+	vdType := vd.Type
 	if vd.ArrSize != 0 {
 		arrV := 0
-		for strings.Contains(vd.Type, "[]") {
-			vd.Type = strings.Replace(vd.Type, "[]", "", 1)
+		for strings.Contains(vdType, "[]") {
+			vdType = strings.Replace(vdType, "[]", "", 1)
 			arrV++
 		}
-		res.Type = fmt.Sprintf("%s%s%s", strings.Repeat("std::vector<", arrV), ToCppType(vd.Type), strings.Repeat(">", arrV))
+		res.Type = fmt.Sprintf("%s%s%s", strings.Repeat("std::vector<", arrV), ToCppType(vdType, clt...), strings.Repeat(">", arrV))
 	} else {
-		res.Type = ToCppType(vd.Type)
+		res.Type = ToCppType(vdType, clt...)
 	}
 	return res
 }
 
-func ToCppParam(param []*smn_pglang.VarDef) string {
+func ToCppParam(param []*smn_pglang.VarDef, clt ...bool) string {
 	if len(param) == 0 {
 		return "void"
 	}
 	list := make([]string, len(param))
 	for i, p := range param {
-		p = ToCppVarDef(p)
-		if p.Var == "" {
-			p.Var = fmt.Sprintf("sm_p%d", i)
+		vp := ToCppVarDef(p, clt...)
+		if vp.Var == "" {
+			vp.Var = fmt.Sprintf("sm_p%d", i)
 		}
-		if CppBuiltInType(p.Type) {
-			list[i] = fmt.Sprintf("%s %s", p.Type, p.Var)
+		if CppBuiltInType(vp.Type) || p.Type == "net.Conn" {
+			list[i] = fmt.Sprintf("%s %s", vp.Type, vp.Var)
 		} else {
-			list[i] = fmt.Sprintf("const %s& %s", p.Type, p.Var)
+			list[i] = fmt.Sprintf("const %s& %s", vp.Type, vp.Var)
 		}
 	}
-	return strings.Join(list, ", ")
 
+	return strings.Join(list, ", ")
 }
 
 func TooCppRet(rets []*smn_pglang.VarDef, pkg, itfName, fName string) string {

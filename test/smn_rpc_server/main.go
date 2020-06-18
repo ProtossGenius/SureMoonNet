@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net"
 
 	"github.com/ProtossGenius/SureMoonNet/rpc_nitf/svrrpc/svr_rpc_rpc_itf"
@@ -62,6 +63,10 @@ func AccpterRun(adapter smn_rpc.MessageAdapterItf) {
 	for {
 		msg, err := adapter.ReadCall()
 		fmt.Println("get Msg : ", msg)
+		if err == io.EOF {
+			fmt.Println("Gen close.")
+			return
+		}
 		check(err)
 		dict, res, err := rpcSvr.OnMessage(msg, adapter.GetConn())
 		fmt.Println("on Message dict = ", dict, ", res = ", fmt.Sprintf("%v", res), "err = ", err)
