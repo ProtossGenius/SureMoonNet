@@ -10,18 +10,6 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/smn/proto_tool/goitf2lang"
 )
 
-func ToCppType(goType string) string {
-	return goitf2lang.ToCppType(goType)
-}
-
-func CppBuiltInType(t string) bool {
-	return goitf2lang.CppBuiltInType(t)
-}
-
-func ToCppVarDef(vd *smn_pglang.VarDef) *smn_pglang.VarDef {
-	return goitf2lang.ToCppVarDef(vd)
-}
-
 func ToCppParam(param []*smn_pglang.VarDef) string {
 	return goitf2lang.ToCppParam(param)
 }
@@ -69,6 +57,8 @@ namespace clt_rpc_%s{
 	writef("class %s :public %s::%s{\npublic:\n", itf.Name, pkg, itf.Name)
 	defer writef("};\n")
 
+	writef("private:")
+	writef("\tsmnet::Conn _c;")
 	writef("public:")
 	writef("\t%s(const smnet::Conn& c):_c(c) {}", itf.Name)
 	writef("\t%s(const smnet::Conn&& c):_c(c) {}", itf.Name)
