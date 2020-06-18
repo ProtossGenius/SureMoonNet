@@ -67,11 +67,11 @@ namespace clt_rpc_%s{
 	defer writef("}//namespace clt_rpc_%s", pkg)
 
 	writef("class %s :public %s::%s{\npublic:\n", itf.Name, pkg, itf.Name)
-	writef("public:")
-	writef("%s(const smnet::Conn& c):_c(c) {}", itf.Name)
-	writef("%s(const smnet::Conn&& c):_c(c) {}", itf.Name)
-
 	defer writef("};\n")
+
+	writef("public:")
+	writef("\t%s(const smnet::Conn& c):_c(c) {}", itf.Name)
+	writef("\t%s(const smnet::Conn&& c):_c(c) {}", itf.Name)
 
 	for _, f := range itf.Functions {
 		writef("\t%s %s(%s)override;\n", TooCppRet(f.Returns, pkg, itf.Name, f.Name), f.Name, ToCppParam(f.Params))
@@ -154,15 +154,14 @@ namespace clt_rpc_%s{
 }
 
 func CppClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
-	dir := path + "/smn_rpc_clt/"
-	if !smn_file.IsFileExist(dir) {
-		err := os.MkdirAll(dir, os.ModePerm)
+	if !smn_file.IsFileExist(path) {
+		err := os.MkdirAll(path, os.ModePerm)
 		if err != nil {
 			return err
 		}
 	}
 
-	dir += (itf.Package + "." + itf.Name)
+	dir := path + "/" + itf.Package + ".clt." + itf.Name
 	err := cppClientHead(dir, itf)
 
 	if err != nil {
