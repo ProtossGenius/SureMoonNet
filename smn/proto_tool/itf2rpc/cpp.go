@@ -17,6 +17,7 @@ func hasPkg(typ string) (pkg string) {
 
 	pkg = strings.Split(typ, ".")[0]
 	pkg = strings.ReplaceAll(pkg, "*", "")
+	pkg = strings.ReplaceAll(pkg, "[]", "")
 	pkg = strings.TrimSpace(pkg)
 
 	return pkg
@@ -149,7 +150,11 @@ namespace clt_rpc_%s{
 					writef("\t__s_m_p_r_m__.set_%s(%s);", fcVar, f.Var)
 				}
 			} else {
-				writef("\tfor(size_t i = 0; i < %s.size(); ++i){__s_m_p_r_m__.set_%s(i, %s[i]);}", f.Var, fcVar, f.Var)
+				if !strings.Contains(f.Type, ".") {
+					writef("\tfor(size_t i = 0; i < %s.size(); ++i){__s_m_p_r_m__.set_%s(i, %s[i]);}", f.Var, fcVar, f.Var)
+				} else {
+					writef("\tfor(size_t i = 0; i < %s.size(); ++i){__s_m_p_r_m__.add_%s()->CopyFrom(%s[i]);}", f.Var, fcVar, f.Var)
+				}
 			}
 		}
 
