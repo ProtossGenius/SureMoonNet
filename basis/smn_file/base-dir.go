@@ -22,12 +22,15 @@ const (
 
 type FileDoFunc func(path string, info os.FileInfo) FileDoFuncResult
 
-func DeepTraversalDir(path string, fileDo FileDoFunc) (info os.FileInfo, err error) {
+//DeepTraversalDir .
+func DeepTraversalDir(path string, fileDo func(path string, info os.FileInfo) FileDoFuncResult) (info os.FileInfo, err error) {
 	dirs, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
+
 	PthSep := string(os.PathSeparator)
+
 	for _, info = range dirs {
 		fpath := path + PthSep + info.Name()
 		switch fileDo(fpath, info) {
@@ -43,9 +46,11 @@ func DeepTraversalDir(path string, fileDo FileDoFunc) (info os.FileInfo, err err
 			continue
 		}
 	}
+
 	return
 }
 
+//Pwd like system pwd.
 func Pwd() string {
 	dir, _ := filepath.Abs(".")
 	return dir
