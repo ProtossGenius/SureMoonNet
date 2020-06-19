@@ -91,7 +91,7 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 
 	gof := code_file_build.NewGoFile("svr_rpc_"+itf.Package, file,
 		"Product by SureMoonNet", "Author: ProtossGenius", "Auto-code should not change.")
-	gof.Imports(itfFullPkg, "github.com/golang/protobuf/proto")
+	gof.Imports(itfFullPkg, "google.golang.org/protobuf/proto")
 	{ // rpc struct
 		b := gof.AddBlock("type SvrRpc%s struct", itf.Name)
 		b.WriteLine("itf %s.%s", itf.Package, itf.Name)
@@ -213,7 +213,7 @@ func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 	gof := code_file_build.NewGoFile("clt_rpc_"+itf.Package, file, "Product by SureMoonNet",
 		"Author: ProtossGenius", "Auto-code should not change.")
 
-	gof.Imports(itfFullPkg, "github.com/golang/protobuf/proto")
+	gof.Imports(itfFullPkg, "google.golang.org/protobuf/proto")
 	gof.Imports(module + "/pb/rip_" + itf.Package)
 
 	tryImport := func(typ string) {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_net"
 	"github.com/ProtossGenius/SureMoonNet/pb/smn_base"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 func iserr(err error) bool {

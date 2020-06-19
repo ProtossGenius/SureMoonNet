@@ -4,7 +4,7 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/pb/base"
 	"github.com/ProtossGenius/SureMoonNet/pb/dict"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 var funcList = []funcGetMsg{
