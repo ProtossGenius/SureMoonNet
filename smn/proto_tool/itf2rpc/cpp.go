@@ -224,3 +224,159 @@ func CppClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 
 	return cppClientSrc(dir, itf)
 }
+
+func cppServerHead(dir string, itf *smn_pglang.ItfDef) error {
+	pkg := itf.Package
+	f, err := smn_file.CreateNewFile(dir + ".h")
+
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	writef := func(s string, a ...interface{}) {
+		_, err = f.WriteString(fmt.Sprintf(s+"\n", a...))
+	}
+
+	writef(`#pragma once
+#include <memory>
+#include <string>
+#include <functional>
+#include "smncpp/asio_server.h"
+`)
+
+	writef(fmt.Sprintf("#include \"pb/rip_%s.pb.h\"", pkg))
+	writef(`
+namespace svr_rpc_%s{
+
+`, pkg)
+
+	defer writef("}//namespace clt_rpc_%s", pkg)
+
+	writef("class %s:public smnet::Session{\n", itf.Name)
+	defer writef("};\n")
+	writef("\ttypedef  boost::asio::ip::tcp tcp;")
+
+	writef("public:")
+	writef("\t%s(tcp::socket socket, std::shared_ptr<%s::%s> itf):Session(std::move(socket)), _itf(itf),"+
+		", readLen(0), pReadLen(static_cast<char*>((void*)&readLen)){}", itf.Name, pkg, itf.Name)
+	writef(`		void run() override;`)
+
+	for _, f := range itf.Functions {
+		writef("\tsmn_base:: %s(%s);\n", goitf2lang.TooCppRet(f.Returns, pkg, itf.Name, f.Name), f.Name,
+			goitf2lang.ToCppParam(f.Params, true))
+	}
+
+	writef("	private:")
+
+	for _, f := range itf.Functions {
+		writef("\trip_%s::%s_%s_Ret %s(const rip_%s::%s_%s_Prm& prm);\n", pkg, itf.Name, f.Name,
+			pkg, itf.Name, f.Name)
+	}
+
+	writef(`	public:		
+		void pack(const google::protobuf::Message& pb){
+			smn_base::Ret ret;
+			ret.ParseFromString(pb.SerializeAsString());
+			smnet::writePb(this->_conn,ret);
+		}
+	private:
+		std::shared_ptr<%s::%s> _itf;
+		size_t readLen;
+		char *pReadLen;
+`, pkg, itf.Name)
+
+	return err
+}
+func cppServerSrc(dir string, itf *smn_pglang.ItfDef) error {
+	pkg := itf.Package
+	f, err := smn_file.CreateNewFile(dir + ".h")
+
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	writef := func(s string, a ...interface{}) {
+		_, err = f.WriteString(fmt.Sprintf(s+"\n", a...))
+	}
+
+	writef(`#include "%s.svr.%s.h"`, pkg, itf.Name)
+	writef(`#include "smncpp/socket_mtd.h"
+#include ""`)
+
+	incMap := map[string]bool{}
+
+	for _, f := range itf.Functions {
+		for _, prm := range f.Params {
+			if pkg := hasPkg(prm.Type); pkg != "" {
+				incMap[fmt.Sprintf("#include \"pb/%s.pb.h\"", pkg)] = true
+			}
+		}
+
+		for _, ret := range f.Returns {
+			if pkg := hasPkg(ret.Type); pkg != "" {
+				incMap[fmt.Sprintf("#include \"pb/%s.pb.h\"", pkg)] = true
+			}
+		}
+	}
+
+	for inc := range incMap {
+		writef(inc)
+	}
+
+	writef(`
+namespace svr_rpc_%s{
+
+`, pkg)
+
+	defer writef("}//namespace clt_rpc_%s", pkg)
+
+	writef("void %s::run(){", itf.Name)
+	writef(`	auto self = shared_from_this();
+	auto& sock = this->_conn->getSocket();
+	sock.async_read_some(boost::asio::buffer(pReadLen, 4), [this, self](boost::system::error_code ec, 
+			std::size_t readLen){
+		if (ec){return;}
+		if (readLen < 4){return;}
+		smnet::netEdianChange<size_t>(pReadLen);
+		smnet::Bytes buff(readLen);
+		this->_conn->read(readLen, buff.arr);
+		smn_base::Call call;
+		call.ParseFromArray(buff.arr, buff.size());
+		switch(call.dict()){
+`)
+
+	for _, f := range itf.Functions {
+		writef("\t\tcase smn_dict::rip_%s_%s_%s_Prm:{", pkg, itf.Name, f.Name)
+		writef("\t\t\trip_%s::%s_%s_Prm prm;", pkg, itf.Name, f.Name)
+		writef("\t\t\tprm.ParseFromString(call.msg());")
+		writef("\t\t\tpack(%s(prm));", f.Name)
+		writef("\t\t\tbreak;")
+		writef("\t\t\t}")
+	}
+
+	writef("\t\t}\n\t\trun();\n\t});\n}") // run;
+
+	return err
+}
+
+func CppServer(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
+	if !smn_file.IsFileExist(path) {
+		err := os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	dir := path + "/" + itf.Package + ".svr." + itf.Name
+	err := cppServerHead(dir, itf)
+
+	if err != nil {
+		return err
+	}
+
+	return cppServerSrc(dir, itf)
+}
