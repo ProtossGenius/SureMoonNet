@@ -96,6 +96,59 @@ func TooCppRet(rets []*smn_pglang.VarDef, pkg, itfName, fName string) string {
 
 }
 
+func hasPkg(typ string) (pkg string) {
+	if !strings.Contains(typ, ".") {
+		return ""
+	}
+
+	pkg = strings.Split(typ, ".")[0]
+	pkg = strings.ReplaceAll(pkg, "*", "")
+	pkg = strings.ReplaceAll(pkg, "[]", "")
+	pkg = strings.TrimSpace(pkg)
+
+	return pkg
+}
+
+//CppNeedInc cpp func need include.
+func CppNeedInc(itf *smn_pglang.ItfDef, openRet bool, needPrmPkg bool, init ...string) map[string]bool {
+	result := make(map[string]bool)
+
+	for _, str := range init {
+		result[str] = true
+	}
+
+	if needPrmPkg {
+		result[fmt.Sprintf("#include \"pb/rip_%s.pb.h\"", itf.Package)] = true
+	}
+
+	for _, f := range itf.Functions {
+		if len(f.Returns) > 1 {
+			result[fmt.Sprintf("#include \"pb/rip_%s.pb.h\"", itf.Package)] = true
+		}
+
+		for idx, ret := range f.Returns {
+			if !openRet && idx > 0 {
+				break
+			}
+
+			if pkg := hasPkg(ret.Type); pkg != "" {
+				result[fmt.Sprintf(`#include "pb/%s.pb.h"`, pkg)] = true
+			}
+		}
+
+		for _, prm := range f.Params {
+			if strings.Contains(prm.Type, "net.Conn") {
+				continue
+			}
+
+			if pkg := hasPkg(prm.Type); pkg != "" {
+				result[fmt.Sprintf(`#include "pb/%s.pb.h"`, pkg)] = true
+			}
+		}
+	}
+	return result
+}
+
 func WriteCppItf(out, pkg string, itf *smn_pglang.ItfDef) {
 	dir := out + "/smn_itf/"
 	if !smn_file.IsFileExist(dir) {
@@ -115,10 +168,8 @@ func WriteCppItf(out, pkg string, itf *smn_pglang.ItfDef) {
 #include"smncpp/socket_itf.h"
 `)
 
-	for _, f := range itf.Functions {
-		if len(f.Returns) > 1 {
-			writef("#include \"pb/rip_%s.pb.h\"", pkg)
-		}
+	for inc := range CppNeedInc(itf, false, false) {
+		writef(inc)
 	}
 
 	writef(`

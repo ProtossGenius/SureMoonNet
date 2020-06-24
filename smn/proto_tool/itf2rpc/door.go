@@ -14,6 +14,7 @@ var TargetMap = map[string]FWriteRPC{
 	"go_s":  GoSvr,
 	"go_c":  GoClient,
 	"cpp_c": CppClient,
+	"cpp_s": CppServer,
 }
 
 //Write itf to rpc.
