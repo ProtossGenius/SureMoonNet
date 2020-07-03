@@ -6,11 +6,6 @@ import (
 	"github.com/ProtossGenius/SureMoonNet/smn/proto_tool/proto_compile"
 )
 
-var (
-	comp       string
-	protocPath string
-)
-
 func checkerr(err error) {
 	if err != nil {
 		panic(err)
