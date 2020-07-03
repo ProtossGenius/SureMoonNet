@@ -81,7 +81,7 @@ func Dict(in string) (list DictConstList, const2Name map[string]string, err erro
 	max := 0
 	data, err := smn_file.FileReadAll(in + "/" + dictFileName)
 
-	if err == nil { //if not found dict.proto, the error not nil, but is right.
+	if err == nil {
 		lines := strings.Split(string(data), "\n")
 		for _, line := range lines {
 			line = strings.TrimSpace(line)
@@ -98,7 +98,7 @@ func Dict(in string) (list DictConstList, const2Name map[string]string, err erro
 				}
 			}
 		}
-	} else {
+	} else { //if not found dict.proto, the error not nil, but is right.
 		err = nil
 	}
 	if err != nil {
