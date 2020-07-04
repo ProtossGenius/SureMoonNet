@@ -241,12 +241,12 @@ namespace svr_rpc_%s{
 	writef("	private:")
 
 	for _, f := range itf.Functions {
-		writef("\trip_%s::%s_%s_Ret %s(const rip_%s::%s_%s_Prm& prm);\n", pkg, itf.Name, f.Name, f.Name,
+		writef("\tstd::string %s(const rip_%s::%s_%s_Prm& prm);\n", f.Name,
 			pkg, itf.Name, f.Name)
 	}
 
 	writef(`	public:		
-		void pack(const google::protobuf::Message& pb);
+void pack(const std::string& pb);
 	private:
 		std::shared_ptr<%s::%s> _itf;
 		int32_t readLen;
@@ -288,9 +288,9 @@ namespace svr_rpc_%s{
 
 	defer writef("}//namespace clt_rpc_%s", pkg)
 
-	writef(`void %s::pack(const google::protobuf::Message& pb){
+	writef(`void %s::pack(const std::string& pb){
 			smn_base::Ret ret;
-			ret.ParseFromString(pb.SerializeAsString());
+			ret.set_msg(pb);
 			smnet::writeString(this->_conn,ret.SerializeAsString());
 		}
 `, itf.Name)
@@ -338,7 +338,7 @@ namespace svr_rpc_%s{
 }`) // run;
 
 	for _, f := range itf.Functions {
-		writef("rip_%s::%s_%s_Ret %s::%s(const rip_%s::%s_%s_Prm& prm){", pkg, itf.Name, f.Name, itf.Name, f.Name,
+		writef("std::string %s::%s(const rip_%s::%s_%s_Prm& prm){", itf.Name, f.Name,
 			pkg, itf.Name, f.Name)
 
 		prmList := []string{}
@@ -366,13 +366,13 @@ namespace svr_rpc_%s{
 
 		if len(f.Returns) == 0 {
 			writef("\tthis->_itf->%s(%s);", f.Name, strings.Join(prmList, ", "))
-			writef("\treturn rip_%s::%s_%s_Ret();\n}", pkg, itf.Name, f.Name)
+			writef("\treturn \"\";\n}")
 
 			continue
 		}
 
 		if len(f.Returns) != 1 {
-			writef("\treturn this->_itf->%s(%s);\n}", f.Name, strings.Join(prmList, ", "))
+			writef("\treturn this->_itf->%s(%s).SerializeAsString();\n}", f.Name, strings.Join(prmList, ", "))
 			continue
 		}
 
@@ -381,7 +381,7 @@ namespace svr_rpc_%s{
 
 		CppFillPb("ret", f.Returns[0], "itfRet", writef)
 
-		writef("\treturn ret;")
+		writef("\treturn ret.SerializeAsString();")
 		writef("}")
 	}
 
