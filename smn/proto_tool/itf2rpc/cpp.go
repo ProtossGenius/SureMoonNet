@@ -42,7 +42,9 @@ func cppClientHead(dir string, itf *smn_pglang.ItfDef) (err error) {
 #include <memory>
 #include <string>
 #include <functional>
+#include "smncpp/lockm.h"
 #include "smncpp/socket_itf.h"
+
 `)
 
 	for inc := range goitf2lang.CppNeedInc(itf, false, false) {
@@ -61,6 +63,7 @@ namespace clt_rpc_%s{
 
 	writef("private:")
 	writef("\tstd::shared_ptr<smnet::Conn> _c;")
+	writef("\tstd::mutex                _lock;")
 	writef("public:")
 	writef("\t%s(std::shared_ptr<smnet::Conn> c):_c(c) {}", itf.Name)
 
@@ -109,6 +112,7 @@ namespace clt_rpc_%s{
 	for _, f := range itf.Functions {
 		writef("%s %s::%s(%s){\n", goitf2lang.TooCppRet(f.Returns, pkg, itf.Name, f.Name), itf.Name, f.Name,
 			goitf2lang.ToCppParam(f.Params, true))
+		writef("\tsmnet::SMLockMgr __s_m_l_o_c_k__(this->_lock);")
 		writef("\tsmn_base::Call __s_m_c_a_l_l__;")
 		writef("\trip_%s::%s_%s_Prm __s_m_p_r_m__;", itf.Package, itf.Name, f.Name)
 

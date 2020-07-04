@@ -213,7 +213,7 @@ func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 	gof := code_file_build.NewGoFile("clt_rpc_"+itf.Package, file, "Product by SureMoonNet",
 		"Author: ProtossGenius", "Auto-code should not change.")
 
-	gof.Imports(itfFullPkg, "google.golang.org/protobuf/proto")
+	gof.Imports("google.golang.org/protobuf/proto")
 	gof.Imports(module + "/pb/rip_" + itf.Package)
 
 	tryImport := func(typ string) {
@@ -231,7 +231,6 @@ func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 
 	{ // rpc struct
 		b := gof.AddBlock("type CltRpc%s struct", itf.Name)
-		b.WriteLine("%s.%s", itf.Package, itf.Name)
 		b.WriteLine("conn smn_rpc.MessageAdapterItf")
 		b.WriteLine("lock sync.Mutex")
 		b.Imports(module + "/pb/smn_dict")
