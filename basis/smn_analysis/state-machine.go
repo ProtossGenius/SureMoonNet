@@ -1,6 +1,7 @@
 package smn_analysis
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -48,7 +49,7 @@ type ProductEnd struct{}
 
 //ProductType result's type. end's id = -1.
 func (*ProductEnd) ProductType() int {
-	return -1
+	return ResultEnd
 }
 
 //ProductDftNode get product type from default.
@@ -58,17 +59,22 @@ type ProductDftNode struct {
 
 //ProductType .
 func (p *ProductDftNode) ProductType() int {
-	return -2
+	return ResultPFromDft
 }
 
 //ProductError end with error.
 type ProductError struct {
-	Error string
+	Err string
 }
 
 //ProductType result's type. usally should >= 0.
 func (*ProductError) ProductType() int {
-	return -3
+	return ResultError
+}
+
+//ToError .
+func (pe *ProductError) ToError() error {
+	return errors.New(pe.Err)
 }
 
 //StateNode StateMachine's node.
