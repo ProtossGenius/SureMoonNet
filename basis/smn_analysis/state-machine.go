@@ -202,6 +202,9 @@ func (sm *StateMachine) changeStateNode(node *StateNode) {
 }
 
 func (sm *StateMachine) cleanNodes() {
+	if sm.nowStateNode == nil {
+		return
+	}
 	sm.nowStateNode.GetProduct()
 	if sm.nowStateNode.Result.ProductType() == -1 {
 		return
