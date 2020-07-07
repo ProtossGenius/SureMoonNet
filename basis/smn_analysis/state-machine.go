@@ -34,6 +34,15 @@ type ProductItf interface {
 	ProductType() int
 }
 
+const (
+	//ResultEnd product by end.
+	ResultEnd = -1
+	//ResultPFromDft product from default node.
+	ResultPFromDft = -2
+	//ResultError end with error.
+	ResultError = -3
+)
+
 //ProductEnd last result.
 type ProductEnd struct{}
 
@@ -50,6 +59,16 @@ type ProductDftNode struct {
 //ProductType .
 func (p *ProductDftNode) ProductType() int {
 	return -2
+}
+
+//ProductError end with error.
+type ProductError struct {
+	Error string
+}
+
+//ProductType result's type. usally should >= 0.
+func (*ProductError) ProductType() int {
+	return -3
 }
 
 //StateNode StateMachine's node.
@@ -176,13 +195,31 @@ func (sm *StateMachine) changeStateNode(node *StateNode) {
 	sm.nowStateNode = node
 }
 
-//End input end-input.
-func (sm *StateMachine) End() {
+func (sm *StateMachine) cleanNodes() {
 	sm.nowStateNode.GetProduct()
-	sm.resultChan <- sm.nowStateNode.Result
 	if sm.nowStateNode.Result.ProductType() == -1 {
 		return
 	}
+
+	sm.resultChan <- sm.nowStateNode.Result
+}
+
+//End insert a end product.
+func (sm *StateMachine) End() {
+	sm.cleanNodes()
+	sm.resultChan <- &ProductEnd{}
+}
+
+//Err insert a err product.
+func (sm *StateMachine) Err(err string) {
+	sm.cleanNodes()
+	sm.resultChan <- &ProductError{err}
+}
+
+//ErrEnd insert a error product.
+func (sm *StateMachine) ErrEnd(err string) {
+	sm.cleanNodes()
+	sm.resultChan <- &ProductError{err}
 	sm.resultChan <- &ProductEnd{}
 }
 
