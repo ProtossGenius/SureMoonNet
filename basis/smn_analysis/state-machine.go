@@ -17,6 +17,8 @@ type StateNodeReader interface {
 	PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error)
 	//Read real read. even isEnd == true the input be readed.
 	Read(stateNode *StateNode, input InputItf) (isEnd bool, err error)
+	//End when end read.
+	End(stateNode *StateNode) (isEnd bool, err error)
 	//GetProduct return result.
 	GetProduct() ProductItf
 	//Clean let the Reader like new.  it will be call before first Read.
@@ -103,6 +105,11 @@ func (sn *StateNode) Read(input InputItf) (isEnd bool, err error) {
 	return sn.reader.Read(sn, input)
 }
 
+//End .
+func (sn *StateNode) End() (isEnd bool, err error) {
+	return sn.reader.End(sn)
+}
+
 //CleanReader run clean for reader.
 func (sn *StateNode) CleanReader() {
 	sn.Result = nil
@@ -146,14 +153,19 @@ func (sm *StateMachine) Read(input InputItf) error {
 	if sm.nowStateNode == nil {
 		sm.useDefault()
 	}
-	sm.isPreadEnd, err = sm.nowStateNode.PreRead(input)
+	for {
+		sm.isPreadEnd, err = sm.nowStateNode.PreRead(input)
 
-	if iserr(err) {
-		return err
-	}
+		if iserr(err) {
+			return err
+		}
 
-	if sm.isPreadEnd {
-		sm.useDefault() // now Reader is DftStateNodeReader, and it don't have PreRead so can call Read direct.
+		if sm.isPreadEnd {
+			sm.useDefault()
+			continue
+		}
+
+		break
 	}
 
 	sm.isReadEnd, err = sm.nowStateNode.Read(input)
@@ -191,7 +203,7 @@ func (sm *StateMachine) Init() *StateMachine {
 }
 
 func (sm *StateMachine) changeStateNode(node *StateNode) {
-	if sm.nowStateNode != nil && sm.nowStateNode != sm.DftStateNode {
+	if sm.nowStateNode != nil {
 		beforeNode := sm.nowStateNode
 		beforeNode.GetProduct()
 		if beforeNode.Result != nil {
@@ -201,35 +213,33 @@ func (sm *StateMachine) changeStateNode(node *StateNode) {
 	sm.nowStateNode = node
 }
 
-func (sm *StateMachine) cleanNodes() {
+//End insert a end product.
+func (sm *StateMachine) End() {
 	if sm.nowStateNode == nil {
 		return
 	}
-	sm.nowStateNode.GetProduct()
-	if sm.nowStateNode.Result.ProductType() == -1 {
-		return
+	_, err := sm.nowStateNode.End()
+	if err != nil {
+		sm.Err(err.Error())
+	} else {
+		sm.nowStateNode.GetProduct()
+		sm.resultChan <- sm.nowStateNode.Result
+		if sm.nowStateNode.Result.ProductType() == -1 {
+			return
+		}
 	}
-
-	sm.resultChan <- sm.nowStateNode.Result
-}
-
-//End insert a end product.
-func (sm *StateMachine) End() {
-	sm.cleanNodes()
 	sm.resultChan <- &ProductEnd{}
 }
 
 //Err insert a err product.
 func (sm *StateMachine) Err(err string) {
-	sm.cleanNodes()
 	sm.resultChan <- &ProductError{err}
 }
 
 //ErrEnd insert a error product.
 func (sm *StateMachine) ErrEnd(err string) {
-	sm.cleanNodes()
-	sm.resultChan <- &ProductError{err}
-	sm.resultChan <- &ProductEnd{}
+	sm.Err(err)
+	sm.End()
 }
 
 func (sm *StateMachine) useDefault() {
@@ -244,6 +254,7 @@ func (sm *StateMachine) GetResultChan() <-chan ProductItf {
 
 //DftStateNodeReader choice node.
 type DftStateNodeReader struct {
+	cleaned   bool
 	sm        *StateMachine
 	SNodeList []*StateNode
 	LiveMap   map[*StateNode]byte
@@ -256,9 +267,17 @@ func (dsn *DftStateNodeReader) Name() string {
 
 //GetProduct .
 func (dsn *DftStateNodeReader) GetProduct() ProductItf {
-	if len(dsn.LiveMap) == 0 {
+	if dsn.cleaned || len(dsn.LiveMap) == 0 {
 		return &ProductEnd{}
 	}
+
+	if len(dsn.LiveMap) == 1 {
+		for k := range dsn.LiveMap {
+			k.GetProduct()
+			return k.Result
+		}
+	}
+
 	res := &ProductDftNode{Reason: "Err when GetProduct ProductDftNode, MutiNode Lived they're  :"}
 	for key := range dsn.LiveMap {
 		res.Reason += ", " + key.reader.Name()
@@ -282,61 +301,70 @@ func (dsn *DftStateNodeReader) Register(node StateNodeReader) *DftStateNodeReade
 
 //Clean .
 func (dsn *DftStateNodeReader) Clean() {
+	dsn.cleaned = true
 	for _, node := range dsn.SNodeList {
 		node.CleanReader()
 		dsn.LiveMap[node] = 0
 	}
 }
 
-//PreRead DftStateNodeReader don't do PreRead, because it should deal all registed reader.
-func (dsn *DftStateNodeReader) PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+func (dsn *DftStateNodeReader) readAction(stateNode *StateNode, input InputItf, kDo func(*StateNode) (bool, error)) (isEnd bool, err error) {
+	dsn.cleaned = false
+	errStr := ""
+	endNode := make([]string, 0, len(dsn.LiveMap))
+	livedNode := make([]string, 0, len(dsn.LiveMap))
+	for k := range dsn.LiveMap {
+		kend, kerr := kDo(k)
+		if iserr(kerr) {
+			errStr += fmt.Sprintf("\n\t%s", kerr.Error())
+			delete(dsn.LiveMap, k)
+			continue
+		}
+
+		if kend {
+			endNode = append(endNode, k.reader.Name())
+		}
+
+		livedNode = append(livedNode, k.reader.Name())
+	}
+
+	if len(dsn.LiveMap) == 0 {
+		return true, fmt.Errorf(ErrNoMatchStateNode, errStr)
+	}
+
+	if len(endNode) > 1 || (len(endNode) == 1 && len(livedNode) > 1) {
+		return true, fmt.Errorf(ErrTooMuchStateNodeLive, input, strings.Join(livedNode, ", "), strings.Join(endNode, ", "))
+	}
+
+	if len(endNode) == 1 {
+		return true, nil
+	}
+
 	return false, nil
 }
 
+//PreRead DftStateNodeReader don't do PreRead, because it should deal all registed reader.
+func (dsn *DftStateNodeReader) PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+	return dsn.readAction(stateNode, input, func(k *StateNode) (bool, error) {
+		return k.PreRead(input.Copy())
+	})
+}
+
 func (dsn *DftStateNodeReader) Read(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
-	liveCnt := 0
-	endCnt := 0
-	errStr := ""
-	var nextNode *StateNode
-	for k := range dsn.LiveMap {
-		kend, kerr := k.PreRead(input.Copy())
-		if iserr(kerr) {
-			errStr += kerr.Error()
-		}
-		if kend || iserr(kerr) {
-			delete(dsn.LiveMap, k)
-			continue
-		}
-		kend, kerr = k.Read(input.Copy())
-		if iserr(kerr) {
-			delete(dsn.LiveMap, k)
-			continue
-		}
-		liveCnt++
-		if liveCnt == 1 {
-			nextNode = k
-		}
-		if kend {
-			endCnt++
-			nextNode = k
-		}
+	return dsn.readAction(stateNode, input, func(k *StateNode) (bool, error) {
+		return k.Read(input.Copy())
+	})
+
+}
+
+func (dsn *DftStateNodeReader) End(stateNode *StateNode) (isEnd bool, err error) {
+	if dsn.cleaned {
+		return true, nil
 	}
-	if liveCnt == 0 {
-		return true, fmt.Errorf(ErrNoMatchStateNode, errStr)
-	}
-	if endCnt > 1 {
-		return true, fmt.Errorf(ErrTooMuchMatchStateNode)
-	}
-	if len(dsn.LiveMap) == 1 {
-		stateNode.ChangeStateNode(nextNode)
-		if endCnt == 1 {
-			return true, nil
-		}
-	}
-	if endCnt != 0 && len(dsn.LiveMap) != 1 { // todo: as success return?
-		return true, fmt.Errorf(ErrTooMuchMatchStateNodeWhenHasEnd)
-	}
-	return false, nil
+
+	return dsn.readAction(stateNode, nil, func(k *StateNode) (bool, error) {
+		return k.End()
+	})
 }
 
 /*StateNodeListReader .
@@ -408,6 +436,11 @@ func (s *StateNodeListReader) Read(stateNode *StateNode, input InputItf) (isEnd 
 	return false, nil
 }
 
+func (s *StateNodeListReader) End(stateNode *StateNode) (isEnd bool, err error) {
+	current := s.Current()
+	return current.End(stateNode)
+}
+
 //GetProduct return result.
 func (s *StateNodeListReader) GetProduct() ProductItf {
 	return s.result
@@ -441,10 +474,11 @@ func (s *StateNodeSelectReader) Name() string {
 }
 
 //PreRead only see if should stop read.
-func (s *StateNodeSelectReader) PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+func (s *StateNodeSelectReader) readAction(stateNode *StateNode, input InputItf, actName string,
+	kDo func(k StateNodeReader) (isEnd bool, err error)) (isEnd bool, err error) {
 	errList := []string{}
 	for cr := range s.LiveMap {
-		lend, lerr := cr.PreRead(stateNode, input)
+		lend, lerr := kDo(cr)
 		if lerr != nil {
 			errList = append(errList, lerr.Error())
 			delete(s.LiveMap, cr)
@@ -457,31 +491,30 @@ func (s *StateNodeSelectReader) PreRead(stateNode *StateNode, input InputItf) (i
 		}
 	}
 	if len(s.LiveMap) == 0 {
-		return true, fmt.Errorf("Error in StateNodeSelectReader, error list : \n%s", strings.Join(errList, "\n"))
+		return true, fmt.Errorf("Error in StateNodeSelectReader.%s, error list : \n%s", actName, strings.Join(errList, "\n"))
 	}
 	return false, nil
 }
 
+//PreRead only see if should stop read.
+func (s *StateNodeSelectReader) PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
+	return s.readAction(stateNode, input, "PreRead", func(k StateNodeReader) (bool, error) {
+		return k.PreRead(stateNode, input.Copy())
+	})
+}
+
 //Read real read. even isEnd == true the input be readed.
 func (s *StateNodeSelectReader) Read(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
-	errList := []string{}
-	for cr := range s.LiveMap {
-		lend, lerr := cr.Read(stateNode, input)
-		if lerr != nil {
-			errList = append(errList, lerr.Error())
-			delete(s.LiveMap, cr)
-			continue
-		}
+	return s.readAction(stateNode, input, "Read", func(k StateNodeReader) (bool, error) {
+		return k.Read(stateNode, input.Copy())
+	})
+}
 
-		if lend {
-			s.Result = cr.GetProduct()
-			return true, nil
-		}
-	}
-	if len(s.LiveMap) == 0 {
-		return true, fmt.Errorf("Error in StateNodeSelectReader, error list : \n%s", strings.Join(errList, "\n"))
-	}
-	return false, nil
+//End .
+func (s *StateNodeSelectReader) End(stateNode *StateNode) (isEnd bool, err error) {
+	return s.readAction(stateNode, nil, "End", func(k StateNodeReader) (bool, error) {
+		return k.End(stateNode)
+	})
 }
 
 //GetProduct return result.
