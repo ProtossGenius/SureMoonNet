@@ -76,6 +76,7 @@ const (
 	ErrNotStructHead     = "ErrNotStructHead: %s"
 	ErrNotItfHead        = "ErrNotItfHead: %s"
 	ErrNotPkgDef         = "ErrNotPkgDef"
+	ErrItfEOF            = "ErrItfEOF"
 	ErrItfExitWithStash  = "ErrItfExitWithStash: %s"
 	ErrNotStructBody     = "ErrNotStructBody: %s"
 	ErrStructUnknowInput = "ErrStructUnknowInput: %s"
@@ -149,6 +150,10 @@ func (this *GoStructNodeReader) Read(stateNode *smn_analysis.StateNode, input sm
 		return false, nil
 	}
 	return true, fmt.Errorf(ErrStructUnknowInput, in.Input)
+}
+
+func (this *GoStructNodeReader) End(stateNode *smn_analysis.StateNode) (isEnd bool, err error) {
+	return true, fmt.Errorf(ErrStructUnknowInput, "EOF")
 }
 
 func (this *GoStructNodeReader) GetProduct() smn_analysis.ProductItf {
@@ -230,6 +235,10 @@ func (this *GoItfNodeReader) Read(stateNode *smn_analysis.StateNode, input smn_a
 	}
 }
 
+func (this *GoItfNodeReader) End(stateNode *smn_analysis.StateNode) (bool, error) {
+	return true, fmt.Errorf(ErrItfEOF)
+}
+
 func (this *GoItfNodeReader) GetProduct() smn_analysis.ProductItf {
 	return this.Result
 }
@@ -264,6 +273,10 @@ func (this *GoPkgNodeReader) Read(stateNode *smn_analysis.StateNode, input smn_a
 		this.Result.Pkg = pkg
 		return true, nil
 	}
+	return true, fmt.Errorf(ErrNotPkgDef)
+}
+
+func (this *GoPkgNodeReader) End(stateNode *smn_analysis.StateNode) (bool, error) {
 	return true, fmt.Errorf(ErrNotPkgDef)
 }
 
