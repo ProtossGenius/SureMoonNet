@@ -3,8 +3,6 @@ module github.com/ProtossGenius/SureMoonNet
 go 1.14
 
 require (
-	github.com/ProtossGenius/smofa v0.0.0-20200512043650-56dc0af43801 // indirect
-	github.com/ProtossGenius/srfile v0.0.0-20200601032907-0258f7e1b3ac // indirect
 	github.com/go-delve/delve v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.1
