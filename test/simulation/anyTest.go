@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
-	"github.com/ProtossGenius/SureMoonNet/smn/proto_tool/itf2rpc"
+	"os"
 )
 
 func check(err error) {
@@ -14,8 +12,8 @@ func check(err error) {
 }
 
 func main() {
-	fmt.Println("start .. ")
+	_, err := os.Stat("./anyTest.go/Makefile")
+	fmt.Println(err)
 
-	prm := itf2rpc.ToCppParam([]*smn_pglang.VarDef{{Type: "[]int64", Var: "p0", ArrSize: -1}})
-	fmt.Println(prm)
+	fmt.Println("start .. ")
 }

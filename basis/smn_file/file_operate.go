@@ -6,15 +6,10 @@ import (
 	"os"
 )
 
-/**
- * 判断文件是否存在  存在返回 true 不存在返回false
- */
+//IsFileExist 判断文件是否存在  存在返回 true 不存在返回false.
 func IsFileExist(fileName string) bool {
-	var exist = true
-	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		exist = false
-	}
-	return exist
+	_, err := os.Stat(fileName)
+	return err == nil
 }
 
 func RemoveFileIfExist(fileName string) error {
