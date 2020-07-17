@@ -231,7 +231,6 @@ namespace svr_rpc_%s{
 	writef("public:")
 	writef(`	%s(tcp::socket socket, std::shared_ptr<%s::%s> itf):Session(std::move(socket)), _itf(itf),
 		 readLen(0), pReadLen(static_cast<char*>((void*)&readLen)){}`, itf.Name, pkg, itf.Name)
-	writef(`	void run() override;`)
 
 	for _, f := range itf.Functions {
 		writef("\t%s %s(%s);\n", goitf2lang.TooCppRet(f.Returns, pkg, itf.Name, f.Name), f.Name,
@@ -239,6 +238,7 @@ namespace svr_rpc_%s{
 	}
 
 	writef("	private:")
+	writef(`	void run() override;`)
 
 	for _, f := range itf.Functions {
 		writef("\tstd::string %s(const rip_%s::%s_%s_Prm& prm);\n", f.Name,
