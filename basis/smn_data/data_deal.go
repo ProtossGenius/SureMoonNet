@@ -2,8 +2,9 @@ package smn_data
 
 import (
 	"errors"
-	"github.com/json-iterator/go"
 	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type DataType int
@@ -21,6 +22,10 @@ func dataType(data string) DataType {
 	switch fc {
 	case '{':
 		if ec == '}' {
+			return DATA_TYPE_JSON
+		}
+	case '[':
+		if ec == ']' {
 			return DATA_TYPE_JSON
 		}
 	case '<':
