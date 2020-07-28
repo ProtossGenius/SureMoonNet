@@ -99,7 +99,8 @@ func ffMf() {
 		check(err)
 	}
 
-	write(`debug:
+	write(`##Tail
+debug:
 
 qrun:
 
