@@ -114,6 +114,9 @@ func (sn *StateNode) End() (isEnd bool, err error) {
 func (sn *StateNode) CleanReader() {
 	sn.Result = nil
 	sn.reader.Clean()
+	for key := range sn.Datas {
+		delete(sn.Datas, key)
+	}
 }
 
 //GetProduct get result.
