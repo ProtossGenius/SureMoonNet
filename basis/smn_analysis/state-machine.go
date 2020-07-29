@@ -403,45 +403,45 @@ func (s *StateNodeListReader) Size() int {
 	return len(s.list)
 }
 
+func (s *StateNodeListReader) readAction(stateNode *StateNode, input InputItf, cDo func(StateNodeReader) (bool, error)) (isEnd bool, err error) {
+	for {
+		current := s.Current()
+		lend, lerr := cDo(current)
+		if lerr != nil {
+			return true, lerr
+		}
+		if lend {
+			s.ptr++
+			if s.ptr == s.Size() {
+				stateNode.Result = current.GetProduct()
+				s.result = stateNode.Result
+				return true, nil
+			}
+
+			continue
+		}
+		return false, nil
+	}
+}
+
 //PreRead only see if should stop read.
 func (s *StateNodeListReader) PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
-	current := s.Current()
-	lend, lerr := current.PreRead(stateNode, input)
-	if lerr != nil {
-		return true, lerr
-	}
-	if lend {
-		s.ptr++
-		if s.ptr == s.Size() {
-			stateNode.Result = current.GetProduct()
-			s.result = stateNode.Result
-			return true, nil
-		}
-	}
-	return false, nil
+	return s.readAction(stateNode, input, func(cur StateNodeReader) (bool, error) {
+		return cur.PreRead(stateNode, input)
+	})
 }
 
 //Read real read. even isEnd == true the input be readed.
 func (s *StateNodeListReader) Read(stateNode *StateNode, input InputItf) (isEnd bool, err error) {
-	current := s.Current()
-	lend, lerr := current.Read(stateNode, input)
-	if lerr != nil {
-		return true, lerr
-	}
-	if lend {
-		s.ptr++
-		stateNode.Result = current.GetProduct()
-		if s.ptr == s.Size() {
-			s.result = stateNode.Result
-			return true, nil
-		}
-	}
-	return false, nil
+	return s.readAction(stateNode, input, func(cur StateNodeReader) (bool, error) {
+		return cur.Read(stateNode, input)
+	})
 }
 
 func (s *StateNodeListReader) End(stateNode *StateNode) (isEnd bool, err error) {
-	current := s.Current()
-	return current.End(stateNode)
+	return s.readAction(stateNode, nil, func(cur StateNodeReader) (bool, error) {
+		return cur.End(stateNode)
+	})
 }
 
 //GetProduct return result.
