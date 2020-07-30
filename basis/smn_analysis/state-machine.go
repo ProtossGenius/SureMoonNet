@@ -33,7 +33,7 @@ type InputItf interface {
 
 //ProductItf StateMachine's result.
 type ProductItf interface {
-	//ProductType result's type. usally should >= 0.
+	//ProductType result's type. usually should >= 0.
 	ProductType() int
 }
 
