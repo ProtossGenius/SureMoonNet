@@ -13,6 +13,8 @@ type OnNodeRead func(stateNode *StateNode, input InputItf) (isEnd bool, err erro
 type StateNodeReader interface {
 	//Name reader's name.
 	Name() string
+	//Clean let the Reader like new.  it will be call before first Read.
+	Clean()
 	//PreRead only see if should stop read.
 	PreRead(stateNode *StateNode, input InputItf) (isEnd bool, err error)
 	//Read real read. even isEnd == true the input be readed.
@@ -21,8 +23,6 @@ type StateNodeReader interface {
 	End(stateNode *StateNode) (isEnd bool, err error)
 	//GetProduct return result.
 	GetProduct() ProductItf
-	//Clean let the Reader like new.  it will be call before first Read.
-	Clean()
 }
 
 //InputItf StateMachine's input.
