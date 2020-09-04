@@ -1,6 +1,7 @@
 package itf2rpc
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -13,19 +14,77 @@ import (
 )
 
 const (
-	//NetDotConn net.conn.
+	// NetDotConn net.conn .
 	NetDotConn = "net.Conn"
-	//SmnBase smn_base.
+	// SmnBase smn_base .
 	SmnBase = "github.com/ProtossGenius/SureMoonNet/pb/smn_base"
-	//SmnRPC smn_rpc.
+	// SmnRPC smn_rpc .
 	SmnRPC = "github.com/ProtossGenius/SureMoonNet/smn/net_libs/smn_rpc"
+	// SmnConnFunc .
+	SmnConnFunc = "smn_rpc.ConnFunc"
 )
+
+// ErrAsynClientHaveConn .
+var ErrAsynClientHaveConn = errors.New("AsynClint not support user-def conn")
 
 /** file as:
 package xxxx
 import(...)
 
 */
+
+func anaVarDefs4Go(vds []*smn_pglang.VarDef, tryImport func(string), gof *code_file_build.CodeFile) (prms, prmDefs, rpcInit, rpcVars, connFunc string) {
+	join := func(lst []string) string {
+		return strings.Join(lst, ", ")
+	}
+	size := len(vds)
+	prmList := make([]string, 0, size)
+	prmDefList := make([]string, 0, size)
+	rpcInitList := make([]string, 0, size)
+	rpcVarList := make([]string, 0, size)
+
+	for _, vd := range vds {
+		tryImport(vd.Type)
+
+		if strings.TrimSpace(vd.Type) != NetDotConn {
+			prmDefList = append(prmDefList, fmt.Sprintf("%s %s", vd.Var, vd.Type))
+			prmList = append(prmList, vd.Var)
+			pv, usmn := goitoi64(vd.Type, vd.Var)
+			rpcInitList = append(rpcInitList, fmt.Sprintf("%s:%s", smn_str.InitialsUpper(vd.Var), pv))
+
+			if usmn {
+				gof.Imports(SmnRPC)
+			}
+
+			pv, usmn = goi64toi(vd.Type, "_res."+smn_str.InitialsUpper(vd.Var))
+			rpcVarList = append(rpcVarList, pv)
+
+			if usmn {
+				gof.Imports(SmnRPC)
+			}
+		} else {
+			if connFunc != "" {
+				fmt.Println("[warning] have muti conn.")
+
+				continue
+			}
+			prmDefList = append(prmDefList, fmt.Sprintf("%s %s", vd.Var, SmnConnFunc))
+			gof.Import(SmnRPC)
+			connFunc = vd.Var
+		}
+	}
+
+	return join(prmList), join(prmDefList), join(rpcInitList), join(rpcVarList), connFunc
+}
+
+func anaFuncDef4Go(f *smn_pglang.FuncDef, tryImport func(string), gof *code_file_build.CodeFile) (prmDefList,
+	retDefList, rpcPrms, rpcRes, connFunc string, haveConn bool) {
+	_, prmDefList, rpcPrms, _, connFunc = anaVarDefs4Go(f.Params, tryImport, gof)
+	haveConn = (connFunc != "")
+	_, retDefList, _, rpcRes, _ = anaVarDefs4Go(f.Returns, tryImport, gof)
+
+	return
+}
 
 func goi64toi(ot, v string) (string, bool) {
 	isArr, typ := smn_str.ProtoUseDeal(ot)
@@ -69,7 +128,11 @@ func goitoi64(ot, v string) (string, bool) {
 	return fmt.Sprintf("smn_rpc.UIntArrToUInt64Arr(%s)", v), true
 }
 
-//GoSvr write to go server RPC code.
+func gofmt(filePath string) {
+	_ = smn_exec.EasyDirExec("./", "gofmt", "-w", filePath)
+}
+
+// GoSvr write to go server RPC code.
 func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 	realPath := path + "/svr_rpc_" + itf.Package
 	if !smn_file.IsFileExist(realPath) {
@@ -86,19 +149,19 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 		return err
 	}
 
-	defer smn_exec.EasyDirExec("./", "gofmt", "-w", filePath)
+	defer gofmt(filePath)
 	defer file.Close()
 
 	gof := code_file_build.NewGoFile("svr_rpc_"+itf.Package, file,
 		"Product by SureMoonNet", "Author: ProtossGenius", "Auto-code should not change.")
 	gof.Imports(itfFullPkg, "google.golang.org/protobuf/proto")
-	{ // rpc struct
+	{ //  rpc struct
 		b := gof.AddBlock("type SvrRpc%s struct", itf.Name)
 		b.WriteLine("itf %s.%s", itf.Package, itf.Name)
 		b.WriteLine("dicts []smn_dict.EDict")
 		b.Imports(module + "/pb/smn_dict")
 	}
-	{ // new func
+	{ //  new func
 		b := gof.AddBlock("func NewSvrRpc%s(itf %s.%s) *SvrRpc%s", itf.Name, itf.Package, itf.Name, itf.Name)
 		b.WriteLine("list := make([]smn_dict.EDict, 0)")
 		for _, f := range itf.Functions {
@@ -106,11 +169,11 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 		}
 		b.WriteLine("return &SvrRpc%s{itf:itf, dicts:list}", itf.Name)
 	}
-	{ // used message dict
+	{ //  used message dict
 		b := gof.AddBlock("func (this *SvrRpc%s)getEDictList() []smn_dict.EDict", itf.Name)
 		b.WriteLine("return this.dicts")
 	}
-	{ //read proto from bytes
+	{ // read proto from bytes
 		for _, f := range itf.Functions {
 			protoType := fmt.Sprintf("rip_%s.%s_%s_Prm", itf.Package, itf.Name, f.Name)
 			b := gof.AddBlock("func ReadEdict_rip_%s_%s_%s_Prm(bytes []byte) *%s",
@@ -121,12 +184,12 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 			b.WriteLine("return msg")
 		}
 	}
-	{ // struct get net-package
+	{ //  struct get net-package
 		b := gof.AddBlock("func (this *SvrRpc%s)OnMessage(c *smn_base.Call, conn net.Conn)"+
 			" (_d int32, _p proto.Message, _e error)", itf.Name)
 		b.Imports(SmnBase)
 		b.Imports("net")
-		{ // rb = recover func
+		{ //  rb = recover func
 			b.WriteLine("defer func() {")
 			ib := b.AddBlock("if err := recover(); err != nil {")
 			ib.IndentationAdd(1)
@@ -135,7 +198,7 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 			ib.WriteLine("_e = fmt.Errorf(\"%%v\", err)")
 			b.WriteLine("}()")
 		}
-		sb := b.AddBlock("switch smn_dict.EDict(c.Dict)") //sb -> switch block
+		sb := b.AddBlock("switch smn_dict.EDict(c.Dict)") // sb -> switch block
 		for _, f := range itf.Functions {
 			cb := sb.AddBlock("case smn_dict.EDict_rip_%s_%s_%s_Prm:", itf.Package, itf.Name, f.Name)
 			cb.WriteLine("_msg := ReadEdict_rip_%s_%s_%s_Prm(c.Msg)", itf.Package, itf.Name, f.Name)
@@ -190,8 +253,8 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 	return err
 }
 
-//GoClient interface to go client RPC code.
-func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
+func goClient(path, module string, itf *smn_pglang.ItfDef, crtStruct func(*code_file_build.CodeFile), funcDo func(*smn_pglang.FuncDef,
+	*code_file_build.CodeFile, func(string)) error) error {
 	realPath := path + "/clt_rpc_" + itf.Package
 	if !smn_file.IsFileExist(realPath) {
 		err := os.MkdirAll(realPath, os.ModePerm)
@@ -202,12 +265,12 @@ func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 
 	filePath := realPath + "/" + itf.Name + ".go"
 	file, err := smn_file.CreateNewFile(filePath)
-
+	//
 	if err != nil {
 		return err
 	}
 
-	defer smn_exec.EasyDirExec("./", "gofmt", "-w", filePath)
+	defer gofmt(filePath)
 	defer file.Close()
 
 	gof := code_file_build.NewGoFile("clt_rpc_"+itf.Package, file, "Product by SureMoonNet",
@@ -219,6 +282,8 @@ func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 	tryImport := func(typ string) {
 		_, typ = smn_str.ProtoUseDeal(typ)
 		if typ == NetDotConn {
+			gof.Imports(SmnRPC)
+
 			return
 		}
 
@@ -229,82 +294,12 @@ func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 		}
 	}
 
-	{ // rpc struct
-		b := gof.AddBlock("type CltRpc%s struct", itf.Name)
-		b.WriteLine("conn smn_rpc.MessageAdapterItf")
-		b.WriteLine("lock sync.Mutex")
-		b.Imports(module + "/pb/smn_dict")
-		b.Imports(SmnRPC)
-		b.Imports("sync")
-	}
-	{ // new func
-		b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf) *CltRpc%s", itf.Name, itf.Name)
-		b.Imports(SmnRPC)
-		b.WriteLine("return &CltRpc%s{conn:conn}", itf.Name)
-	}
-	{ // interface achieve
+	crtStruct(gof)
+	{ //  interface achieve
 		for _, f := range itf.Functions {
-			prmList := ""
-			resList := ""
-			rpcPrms := ""
-			rpcRes := ""
-			connFunc := ""
-			haveConn := false
-			for i, prm := range f.Params {
-				tryImport(prm.Type)
-				isConn := strings.TrimSpace(prm.Type) == NetDotConn
-				if isConn {
-					haveConn = true
-				}
-				if i != 0 {
-					prmList += ", "
-					if !isConn {
-						rpcPrms += ", "
-					}
-				}
-				if !isConn {
-					prmList += fmt.Sprintf("%s %s", prm.Var, prm.Type)
-				} else {
-					prmList += fmt.Sprintf("%s %s", prm.Var, "smn_rpc.ConnFunc")
-					connFunc = prm.Var
-					gof.Import(SmnRPC)
-				}
-				if !isConn {
-					pv, usmn := goitoi64(prm.Type, prm.Var)
-					rpcPrms += fmt.Sprintf("%s:%s", smn_str.InitialsUpper(prm.Var), pv)
-					if usmn {
-						gof.Imports(SmnRPC)
-					}
-				}
+			if err := funcDo(f, gof, tryImport); err != nil {
+				return err
 			}
-			for i, rp := range f.Returns {
-				tryImport(rp.Type)
-				if i != 0 {
-					resList += ", "
-					rpcRes += ", "
-				}
-				resList += rp.Type
-				pv, usmn := goi64toi(rp.Type, "_res."+smn_str.InitialsUpper(rp.Var))
-				rpcRes += pv
-				if usmn {
-					gof.Imports(SmnRPC)
-				}
-			}
-			b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, resList)
-			b.WriteLine("this.lock.Lock()")
-			b.WriteLine("defer this.lock.Unlock()")
-			b.WriteLine("_msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
-			b.WriteLine("this.conn.WriteCall(int32(smn_dict.EDict_rip_%s_%s_%s_Prm), _msg)", itf.Package, itf.Name, f.Name)
-			if haveConn {
-				b.WriteLine("%s(this.conn.GetConn())", connFunc)
-			}
-			b.WriteLine("_rm, _err := this.conn.ReadRet()")
-			b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
-			b.WriteLine("if _rm.Err{\n\tpanic(string(_rm.Msg))\n}")
-			b.WriteLine("_res := &rip_%s.%s_%s_Ret{}", itf.Package, itf.Name, f.Name)
-			b.WriteLine("_err = proto.Unmarshal(_rm.Msg, _res)")
-			b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
-			b.WriteLine("return %s", rpcRes)
 		}
 	}
 
@@ -313,7 +308,100 @@ func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 	return err
 }
 
-//Go go's rpc.
+// GoClient interface to go client RPC code.
+func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
+	return goClient(path, module, itf, func(gof *code_file_build.CodeFile) {
+		{ //  rpc struct
+			b := gof.AddBlock("type CltRpc%s struct", itf.Name)
+			b.WriteLine("conn smn_rpc.MessageAdapterItf")
+			b.WriteLine("lock sync.Mutex")
+			b.Imports(module + "/pb/smn_dict")
+			b.Imports(SmnRPC)
+			b.Imports("sync")
+		}
+		{ //  new func
+			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf) *CltRpc%s", itf.Name, itf.Name)
+			b.Imports(SmnRPC)
+			b.WriteLine("return &CltRpc%s{conn:conn}", itf.Name)
+		}
+	}, func(f *smn_pglang.FuncDef, gof *code_file_build.CodeFile, tryImport func(string)) error {
+		prmList, retDefList, rpcPrms, rpcRes, connFunc, haveConn := anaFuncDef4Go(f, tryImport, gof)
+
+		b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, retDefList)
+		b.WriteLine("this.lock.Lock()")
+		b.WriteLine("defer this.lock.Unlock()")
+		b.WriteLine("_msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
+		b.WriteLine("this.conn.WriteCall(int32(smn_dict.EDict_rip_%s_%s_%s_Prm), _msg)", itf.Package, itf.Name, f.Name)
+		if haveConn {
+			b.WriteLine("%s(this.conn.GetConn())", connFunc)
+		}
+		b.WriteLine("_rm, _err := this.conn.ReadRet()")
+		b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
+		b.WriteLine("if _rm.Err{\n\tpanic(string(_rm.Msg))\n}")
+		b.WriteLine("_res := &rip_%s.%s_%s_Ret{}", itf.Package, itf.Name, f.Name)
+		b.WriteLine("_err = proto.Unmarshal(_rm.Msg, _res)")
+		b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
+		b.WriteLine("return %s", rpcRes)
+
+		return nil
+	})
+}
+
+// GoAsynClient interface to go client RPC code.
+func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
+	return goClient(path, module, itf, func(gof *code_file_build.CodeFile) {
+		{ //  rpc struct
+			b := gof.AddBlock("type CltRpc%s struct", itf.Name)
+			b.WriteLine("conn smn_rpc.MessageAdapterItf")
+			b.WriteLine("msgChan chan proto.Message")
+			b.WriteLine("lock sync.Mutex")
+			b.Imports(module + "/pb/smn_dict")
+			b.Imports(SmnRPC)
+			b.Imports("sync")
+		}
+		{ //  new func
+			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf) *CltRpc%s", itf.Name, itf.Name)
+			b.Imports(SmnRPC)
+			b.WriteLine("msgChan := make(chan proto.Message, 1)")
+			b.WriteLine(`go func(){
+				c := conn 
+				mc := msgChan 
+				for{
+					rcvMsg, err := c.ReadRet()
+					if err != nil{
+						panic(err)
+					}
+					mc<- rcvMsg
+				}
+
+			}`)
+
+			b.WriteLine("return &CltRpc%s{conn:conn, msgChan:msgChan}", itf.Name)
+		}
+	}, func(f *smn_pglang.FuncDef, gof *code_file_build.CodeFile, tryImport func(string)) error {
+		prmList, retDefList, rpcPrms, rpcRes, _, haveConn := anaFuncDef4Go(f, tryImport, gof)
+
+		b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, retDefList)
+		b.WriteLine("this.lock.Lock()")
+		b.WriteLine("defer this.lock.Unlock()")
+		b.WriteLine("_msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
+		b.WriteLine("this.conn.WriteCall(int32(smn_dict.EDict_rip_%s_%s_%s_Prm), _msg)", itf.Package, itf.Name, f.Name)
+		if haveConn {
+			return ErrAsynClientHaveConn
+		}
+		b.WriteLine("_rm, _err := this.conn.ReadRet()")
+		b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
+		b.WriteLine("if _rm.Err{\n\tpanic(string(_rm.Msg))\n}")
+		b.WriteLine("_res := &rip_%s.%s_%s_Ret{}", itf.Package, itf.Name, f.Name)
+		b.WriteLine("_err = proto.Unmarshal(_rm.Msg, _res)")
+		b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
+		b.WriteLine("return %s", rpcRes)
+
+		return nil
+	})
+}
+
+// Go go's rpc.
 func Go(itfPath, module string, c, s bool) error {
 	return nil
 }
