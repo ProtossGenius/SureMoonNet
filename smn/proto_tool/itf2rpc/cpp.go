@@ -56,7 +56,7 @@ namespace clt_rpc_%s{
 
 `, pkg)
 
-	defer writef("}//namespace clt_rpc_%s", pkg)
+	defer writef("}// namespace clt_rpc_%s", pkg)
 
 	writef("class %s {\n", itf.Name)
 	defer writef("};\n")
@@ -107,7 +107,7 @@ namespace clt_rpc_%s{
 
 `, pkg)
 
-	defer writef("}//namespace clt_rpc_%s", pkg)
+	defer writef("}// namespace clt_rpc_%s", pkg)
 
 	for _, f := range itf.Functions {
 		writef("%s %s::%s(%s){\n", goitf2lang.TooCppRet(f.Returns, pkg, itf.Name, f.Name), itf.Name, f.Name,
@@ -129,7 +129,7 @@ namespace clt_rpc_%s{
 
 		writef(`	__s_m_c_a_l_l__.set_dict(smn_dict::rip_%s_%s_%s_Prm);`, pkg, itf.Name, f.Name)
 		writef(`	__s_m_c_a_l_l__.set_msg(__s_m_p_r_m__.SerializeAsString());
-	//write param to server.
+	// write param to server.
 	if (smnet::writeString(this->_c, __s_m_c_a_l_l__.SerializeAsString()) != smnet::ConnStatusSucc){
 		throw this->_c->lastError();
 	}
@@ -140,7 +140,7 @@ namespace clt_rpc_%s{
 		}
 
 		writef(`
-	//read server's return
+	// read server's return
 	smnet::Bytes __s_m_r_e_t_B_u_f_f__;
 	if (smnet::readLenBytes(this->_c, __s_m_r_e_t_B_u_f_f__)  != smnet::ConnStatusSucc){
 		throw this->_c->lastError();
@@ -222,7 +222,7 @@ namespace svr_rpc_%s{
 
 `, pkg)
 
-	defer writef("}//namespace clt_rpc_%s", pkg)
+	defer writef("}// namespace clt_rpc_%s", pkg)
 
 	writef("class %s:public smnet::Session{\n", itf.Name)
 	defer writef("};\n")
@@ -286,7 +286,7 @@ namespace svr_rpc_%s{
 
 `, pkg)
 
-	defer writef("}//namespace clt_rpc_%s", pkg)
+	defer writef("}// namespace clt_rpc_%s", pkg)
 
 	writef(`void %s::pack(const std::string& pb){
 			smn_base::Ret ret;
@@ -335,7 +335,7 @@ namespace svr_rpc_%s{
 		}
 		run();
 	});
-}`) // run;
+}`) //  run;
 
 	for _, f := range itf.Functions {
 		writef("std::string %s::%s(const rip_%s::%s_%s_Prm& prm){", itf.Name, f.Name,
@@ -388,7 +388,7 @@ namespace svr_rpc_%s{
 	return err
 }
 
-//CppFillPb .
+// CppFillPb .
 func CppFillPb(pbName string, f *smn_pglang.VarDef, varName string, writef func(f string, a ...interface{})) {
 	if strings.Contains(f.Type, "net.Conn") {
 		return
@@ -423,7 +423,7 @@ func CppFillPb(pbName string, f *smn_pglang.VarDef, varName string, writef func(
 	}
 }
 
-//CppServer SMNRPC server code product.
+// CppServer SMNRPC server code product.
 func CppServer(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 	if !smn_file.IsFileExist(path) {
 		err := os.MkdirAll(path, os.ModePerm)

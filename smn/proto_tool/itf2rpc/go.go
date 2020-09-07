@@ -33,7 +33,8 @@ import(...)
 
 */
 
-func anaVarDefs4Go(vds []*smn_pglang.VarDef, prex string, tryImport func(string), gof *code_file_build.CodeFile) (prms, prmDefs, rpcInit, rpcVars, connFunc string) {
+func anaVarDefs4Go(vds []*smn_pglang.VarDef, prex string, tryImport func(string),
+	gof *code_file_build.CodeFile) (prms, prmDefs, rpcInit, rpcVars, connFunc string) {
 	join := func(lst []string) string {
 		return strings.Join(lst, ", ")
 	}
