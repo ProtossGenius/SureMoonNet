@@ -13,6 +13,7 @@ type FWriteRPC func(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) err
 var TargetMap = map[string]FWriteRPC{
 	"go_s":  GoSvr,
 	"go_c":  GoClient,
+	"go_ac": GoAsynClient,
 	"cpp_c": CppClient,
 	"cpp_s": CppServer,
 }

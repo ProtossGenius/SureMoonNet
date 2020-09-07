@@ -33,7 +33,7 @@ import(...)
 
 */
 
-func anaVarDefs4Go(vds []*smn_pglang.VarDef, tryImport func(string), gof *code_file_build.CodeFile) (prms, prmDefs, rpcInit, rpcVars, connFunc string) {
+func anaVarDefs4Go(vds []*smn_pglang.VarDef, prex string, tryImport func(string), gof *code_file_build.CodeFile) (prms, prmDefs, rpcInit, rpcVars, connFunc string) {
 	join := func(lst []string) string {
 		return strings.Join(lst, ", ")
 	}
@@ -43,13 +43,18 @@ func anaVarDefs4Go(vds []*smn_pglang.VarDef, tryImport func(string), gof *code_f
 	rpcInitList := make([]string, 0, size)
 	rpcVarList := make([]string, 0, size)
 
-	for _, vd := range vds {
+	for i, vd := range vds {
 		tryImport(vd.Type)
 
+		varName := vd.Var
+		if varName == fmt.Sprintf("p%d", i) {
+			varName = fmt.Sprintf("%s%d", prex, i)
+		}
+
 		if strings.TrimSpace(vd.Type) != NetDotConn {
-			prmDefList = append(prmDefList, fmt.Sprintf("%s %s", vd.Var, vd.Type))
+			prmDefList = append(prmDefList, fmt.Sprintf("%s %s", varName, vd.Type))
 			prmList = append(prmList, vd.Var)
-			pv, usmn := goitoi64(vd.Type, vd.Var)
+			pv, usmn := goitoi64(vd.Type, varName)
 			rpcInitList = append(rpcInitList, fmt.Sprintf("%s:%s", smn_str.InitialsUpper(vd.Var), pv))
 
 			if usmn {
@@ -79,9 +84,9 @@ func anaVarDefs4Go(vds []*smn_pglang.VarDef, tryImport func(string), gof *code_f
 
 func anaFuncDef4Go(f *smn_pglang.FuncDef, tryImport func(string), gof *code_file_build.CodeFile) (prmDefList,
 	retDefList, rpcPrms, rpcRes, connFunc string, haveConn bool) {
-	_, prmDefList, rpcPrms, _, connFunc = anaVarDefs4Go(f.Params, tryImport, gof)
+	_, prmDefList, rpcPrms, _, connFunc = anaVarDefs4Go(f.Params, "p", tryImport, gof)
 	haveConn = (connFunc != "")
-	_, retDefList, _, rpcRes, _ = anaVarDefs4Go(f.Returns, tryImport, gof)
+	_, retDefList, _, rpcRes, _ = anaVarDefs4Go(f.Returns, "r", tryImport, gof)
 
 	return
 }
@@ -350,10 +355,11 @@ func GoClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 // GoAsynClient interface to go client RPC code.
 func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 	return goClient(path, module, itf, func(gof *code_file_build.CodeFile) {
+		gof.Import(SmnBase)
 		{ //  rpc struct
 			b := gof.AddBlock("type CltRpc%s struct", itf.Name)
 			b.WriteLine("conn smn_rpc.MessageAdapterItf")
-			b.WriteLine("msgChan chan proto.Message")
+			b.WriteLine("msgChan chan *smn_base.Ret")
 			b.WriteLine("lock sync.Mutex")
 			b.Imports(module + "/pb/smn_dict")
 			b.Imports(SmnRPC)
@@ -362,26 +368,27 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 		{ //  new func
 			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf) *CltRpc%s", itf.Name, itf.Name)
 			b.Imports(SmnRPC)
-			b.WriteLine("msgChan := make(chan proto.Message, 1)")
-			b.WriteLine(`go func(){
-				c := conn 
-				mc := msgChan 
-				for{
-					rcvMsg, err := c.ReadRet()
-					if err != nil{
-						panic(err)
-					}
-					mc<- rcvMsg
+			b.WriteLine("msgChan := make(chan *smn_base.Ret, 1)")
+			b.WriteLine(`
+	go func(){
+		c := conn 
+		mc := msgChan 
+			for{
+				rcvMsg, err := c.ReadRet()
+				if err != nil{
+					panic(err)
 				}
+				mc<- rcvMsg
+			}
 
-			}`)
+		}()`)
 
 			b.WriteLine("return &CltRpc%s{conn:conn, msgChan:msgChan}", itf.Name)
 		}
 	}, func(f *smn_pglang.FuncDef, gof *code_file_build.CodeFile, tryImport func(string)) error {
 		prmList, retDefList, rpcPrms, rpcRes, _, haveConn := anaFuncDef4Go(f, tryImport, gof)
 
-		b := gof.AddBlock("func (this *CltRpc%s)%s(%s) (%s)", itf.Name, f.Name, prmList, retDefList)
+		b := gof.AddBlock("func (this *CltRpc%s)%s(%s, __sm_callback func(%s))", itf.Name, f.Name, prmList, retDefList)
 		b.WriteLine("this.lock.Lock()")
 		b.WriteLine("defer this.lock.Unlock()")
 		b.WriteLine("_msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
@@ -389,19 +396,17 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 		if haveConn {
 			return ErrAsynClientHaveConn
 		}
-		b.WriteLine("_rm, _err := this.conn.ReadRet()")
-		b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
+		b.WriteLine(`
+go func(){
+	_rm := <-this.msgChan`)
 		b.WriteLine("if _rm.Err{\n\tpanic(string(_rm.Msg))\n}")
 		b.WriteLine("_res := &rip_%s.%s_%s_Ret{}", itf.Package, itf.Name, f.Name)
-		b.WriteLine("_err = proto.Unmarshal(_rm.Msg, _res)")
+		b.WriteLine("_err := proto.Unmarshal(_rm.Msg, _res)")
 		b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
-		b.WriteLine("return %s", rpcRes)
+		b.WriteLine(`
+	__sm_callback(%s)
+}()`, rpcRes)
 
 		return nil
 	})
-}
-
-// Go go's rpc.
-func Go(itfPath, module string, c, s bool) error {
-	return nil
 }
