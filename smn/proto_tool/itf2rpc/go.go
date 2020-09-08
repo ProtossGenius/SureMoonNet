@@ -251,7 +251,7 @@ func GoSvr(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error {
 			cb.WriteLine("}, nil")
 		}
 		cb := sb.AddBlock("default:")
-		cb.WriteLine(`return -1, nil, fmt.Errorf("Can't Found Dict: %d", c.Dict)`)
+		cb.WriteLine(`return -1, nil, fmt.Errorf("Can't Found Dict: %%d", c.Dict)`)
 	}
 
 	_, err = gof.Output()
