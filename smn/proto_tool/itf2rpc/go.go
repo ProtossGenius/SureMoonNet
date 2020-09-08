@@ -360,53 +360,60 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 		{ //  rpc struct
 			b := gof.AddBlock("type CltRpc%s struct", itf.Name)
 			b.WriteLine("conn smn_rpc.MessageAdapterItf")
-			b.WriteLine("msgChan chan *smn_base.Ret")
+			b.WriteLine("onMsg chan func(*smn_base.Ret)")
 			b.WriteLine("lock sync.Mutex")
+			b.WriteLine("OnErr smn_err.OnErr")
 			b.Imports(module + "/pb/smn_dict")
 			b.Imports(SmnRPC)
 			b.Imports("sync")
+			b.Imports("github.com/ProtossGenius/SureMoonNet/basis/smn_err")
 		}
 		{ //  new func
-			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf) *CltRpc%s", itf.Name, itf.Name)
+			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf, cacheSize int) *CltRpc%s", itf.Name, itf.Name)
 			b.Imports(SmnRPC)
-			b.WriteLine("msgChan := make(chan *smn_base.Ret, 1)")
 			b.WriteLine(`
+	res := &CltRpc%s{conn:conn, onMsg:make(chan func(*smn_base.Ret), cacheSize), OnErr: smn_err.DftOnErr}
 	go func(){
-		c := conn 
-		mc := msgChan 
-			for{
-				rcvMsg, err := c.ReadRet()
+		for{
+				rcvMsg, err := res.conn.ReadRet()
 				if err != nil{
-					panic(err)
+					res.OnErr(err)
 				}
-				mc<- rcvMsg
+				f := <-res.onMsg
+				go f(rcvMsg)
 			}
 
-		}()`)
+		}()`, itf.Name)
 
-			b.WriteLine("return &CltRpc%s{conn:conn, msgChan:msgChan}", itf.Name)
+			b.WriteLine("return res")
 		}
 	}, func(f *smn_pglang.FuncDef, gof *code_file_build.CodeFile, tryImport func(string)) error {
 		prmList, retDefList, rpcPrms, rpcRes, _, haveConn := anaFuncDef4Go(f, tryImport, gof)
 
+		if haveConn {
+			return ErrAsynClientHaveConn
+		}
+
 		b := gof.AddBlock("func (this *CltRpc%s)%s(%s, __sm_callback func(%s))", itf.Name, f.Name, prmList, retDefList)
+		b.WriteLine(`
+__onMsg := func(_rm *smn_base.Ret){
+	if _rm.Err{
+		this.OnErr(errors.New(string(_rm.Msg)))
+	}
+
+	_res := &rip_%s.%s_%s_Ret{}
+	_err := proto.Unmarshal(_rm.Msg, _res)
+	if _err != nil{
+		this.OnErr(_err)
+	}
+	__sm_callback(%s)
+}`, itf.Package, itf.Name, f.Name, rpcRes)
+		gof.Import("errors")
 		b.WriteLine("this.lock.Lock()")
 		b.WriteLine("defer this.lock.Unlock()")
 		b.WriteLine("_msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
 		b.WriteLine("this.conn.WriteCall(int32(smn_dict.EDict_rip_%s_%s_%s_Prm), _msg)", itf.Package, itf.Name, f.Name)
-		if haveConn {
-			return ErrAsynClientHaveConn
-		}
-		b.WriteLine(`
-go func(){
-	_rm := <-this.msgChan`)
-		b.WriteLine("if _rm.Err{\n\tpanic(string(_rm.Msg))\n}")
-		b.WriteLine("_res := &rip_%s.%s_%s_Ret{}", itf.Package, itf.Name, f.Name)
-		b.WriteLine("_err := proto.Unmarshal(_rm.Msg, _res)")
-		b.WriteLine("if _err != nil{\n\tpanic(_err)\n}")
-		b.WriteLine(`
-	__sm_callback(%s)
-}()`, rpcRes)
+		b.WriteLine("this.onMsg <- __onMsg")
 
 		return nil
 	})
