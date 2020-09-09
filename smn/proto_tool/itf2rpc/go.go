@@ -371,8 +371,7 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 		{ //  new func
 			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf, cacheSize int) *CltRpc%s", itf.Name, itf.Name)
 			b.Imports(SmnRPC)
-			b.WriteLine(`
-	res := &CltRpc%s{conn:conn, onMsg:make(chan func(*smn_base.Ret), cacheSize), OnErr: smn_err.DftOnErr}
+			b.WriteLine(`res := &CltRpc%s{conn:conn, onMsg:make(chan func(*smn_base.Ret), cacheSize), OnErr: smn_err.DftOnErr}
 	go func(){
 		for{
 				rcvMsg, err := res.conn.ReadRet()
@@ -395,8 +394,8 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 		}
 
 		b := gof.AddBlock("func (this *CltRpc%s)%s(%s, __sm_callback func(%s))", itf.Name, f.Name, prmList, retDefList)
-		b.WriteLine(`
-__onMsg := func(_rm *smn_base.Ret){
+		gof.Import("github.com/ProtossGenius/SureMoonNet/basis/smn_net")
+		b.WriteLine(`__onMsg := func(_rm *smn_base.Ret){
 	if _rm.Err{
 		this.OnErr(errors.New(string(_rm.Msg)))
 	}
@@ -409,10 +408,18 @@ __onMsg := func(_rm *smn_base.Ret){
 	__sm_callback(%s)
 }`, itf.Package, itf.Name, f.Name, rpcRes)
 		gof.Import("errors")
+		gof.Import("google.golang.org/protobuf/proto")
+		b.WriteLine("_msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
+		b.WriteLine("_bts, _err := proto.Marshal(_msg)")
+		b.WriteLine("this.OnErr(_err)\n")
+		b.WriteLine("_bcall := &smn_base.Call{Dict:int32(smn_dict.EDict_rip_%s_%s_%s_Prm), Msg:_bts}",
+			itf.Package, itf.Name, f.Name)
+		b.WriteLine("_bts, _err = proto.Marshal(_bcall)")
+		b.WriteLine("this.OnErr(_err)\n")
 		b.WriteLine("this.lock.Lock()")
 		b.WriteLine("defer this.lock.Unlock()")
-		b.WriteLine("_msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
-		b.WriteLine("this.conn.WriteCall(int32(smn_dict.EDict_rip_%s_%s_%s_Prm), _msg)", itf.Package, itf.Name, f.Name)
+		b.WriteLine("_, _err = smn_net.WriteBytes(_bts, this.conn.GetConn())")
+		b.WriteLine("this.OnErr(_err)")
 		b.WriteLine("this.onMsg <- __onMsg")
 
 		return nil
