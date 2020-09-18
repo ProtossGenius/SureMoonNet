@@ -20,19 +20,21 @@ const (
 	FILE_DO_FUNC_RESULT_NO_DEAL                           // not deal that file and continue
 )
 
+// PathSep path sep .
+const PathSep = string(os.PathSeparator)
+
 type FileDoFunc func(path string, info os.FileInfo) FileDoFuncResult
 
-//DeepTraversalDir .
-func DeepTraversalDir(path string, fileDo func(path string, info os.FileInfo) FileDoFuncResult) (info os.FileInfo, err error) {
+// DeepTraversalDir .
+func DeepTraversalDir(path string,
+	fileDo func(path string, info os.FileInfo) FileDoFuncResult) (info os.FileInfo, err error) {
 	dirs, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
 
-	PthSep := string(os.PathSeparator)
-
 	for _, info = range dirs {
-		fpath := path + PthSep + info.Name()
+		fpath := path + PathSep + info.Name()
 		switch fileDo(fpath, info) {
 		case FILE_DO_FUNC_RESULT_STOP_TRAV:
 			return info, nil
@@ -50,8 +52,32 @@ func DeepTraversalDir(path string, fileDo func(path string, info os.FileInfo) Fi
 	return
 }
 
-//Pwd like system pwd.
+// ListDirs ..
+func ListDirs(path string, dirDo func(dPath string) FileDoFuncResult) (err error) {
+	dirs, err := ioutil.ReadDir(path)
+	if err != nil {
+		return err
+	}
+
+	dirDo(path)
+
+	for _, info := range dirs {
+		if !info.IsDir() {
+			continue
+		}
+
+		err = ListDirs(path+PathSep+info.Name(), dirDo)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Pwd like system pwd.
 func Pwd() string {
 	dir, _ := filepath.Abs(".")
+
 	return dir
 }
