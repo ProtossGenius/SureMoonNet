@@ -53,7 +53,7 @@ func DeepTraversalDir(path string,
 }
 
 // ListDirs ..
-func ListDirs(path string, dirDo func(dPath string) FileDoFuncResult) (err error) {
+func ListDirs(path string, dirDo func(dPath string)) (err error) {
 	dirs, err := ioutil.ReadDir(path)
 	if err != nil {
 		return err
