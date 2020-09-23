@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
+	"github.com/ProtossGenius/pglang/snreader"
 )
 
 /*
@@ -24,7 +24,7 @@ type Input struct {
 }
 
 //Copy should give copy to prevent user change it.
-func (i *Input) Copy() smn_analysis.InputItf {
+func (i *Input) Copy() snreader.InputItf {
 	return &Input{Input: i.Input}
 }
 
@@ -46,11 +46,11 @@ func (this *Type1NodeReader) Name() string {
 	return "Type1NodeReader"
 }
 
-func (this *Type1NodeReader) GetProduct() smn_analysis.ProductItf {
+func (this *Type1NodeReader) GetProduct() snreader.ProductItf {
 	return this.Result
 }
 
-func (this *Type1NodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *Type1NodeReader) PreRead(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	rInp := input.(*Input)
 	err = fmt.Errorf("type 1 UnExcept Input %c", rInp.Input)
 	if len(this.inputs) == 0 && rInp.Input != 'a' {
@@ -61,7 +61,7 @@ func (this *Type1NodeReader) PreRead(stateNode *smn_analysis.StateNode, input sm
 	return false, nil
 }
 
-func (this *Type1NodeReader) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *Type1NodeReader) Read(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	rInp := input.(*Input)
 	this.inputs = append(this.inputs, rInp)
 	if len(this.inputs) == 2 {
@@ -84,11 +84,11 @@ func (this *Type2NodeReader) Name() string {
 	return "Type2NodeReader"
 }
 
-func (this *Type2NodeReader) GetProduct() smn_analysis.ProductItf {
+func (this *Type2NodeReader) GetProduct() snreader.ProductItf {
 	return this.Result
 }
 
-func (this *Type2NodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *Type2NodeReader) PreRead(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	rInp := input.(*Input)
 	err = fmt.Errorf("type 2 UnExcept Input %c", rInp.Input)
 	if len(this.inputs) == 0 && rInp.Input != 'a' {
@@ -100,7 +100,7 @@ func (this *Type2NodeReader) PreRead(stateNode *smn_analysis.StateNode, input sm
 	return false, nil
 }
 
-func (this *Type2NodeReader) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *Type2NodeReader) Read(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	rInp := input.(*Input)
 	this.inputs = append(this.inputs, rInp)
 	if len(this.inputs) == 2 {
@@ -123,11 +123,11 @@ func (this *Type3NodeReader) Name() string {
 	return "Type3NodeReader"
 }
 
-func (this *Type3NodeReader) GetProduct() smn_analysis.ProductItf {
+func (this *Type3NodeReader) GetProduct() snreader.ProductItf {
 	return this.Result
 }
 
-func (this *Type3NodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *Type3NodeReader) PreRead(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	rInp := input.(*Input)
 	err = fmt.Errorf("type 3 UnExcept Input %c", rInp.Input)
 	if rInp.Input != 'b' {
@@ -136,7 +136,7 @@ func (this *Type3NodeReader) PreRead(stateNode *smn_analysis.StateNode, input sm
 	return false, nil
 }
 
-func (this *Type3NodeReader) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *Type3NodeReader) Read(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	fmt.Println("save Result is .. ", stateNode.Result)
 	rInp := input.(*Input)
 	this.inputs = append(this.inputs, rInp)
@@ -157,8 +157,8 @@ func check(err error) {
 func testDefault() {
 	var err error
 
-	sm := (&smn_analysis.StateMachine{}).Init()
-	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
+	sm := (&snreader.StateMachine{}).Init()
+	dftSNR := snreader.NewDftStateNodeReader(sm)
 	dftSNR.Register(&Type1NodeReader{})
 	dftSNR.Register(&Type2NodeReader{})
 	dftSNR.Register(&Type3NodeReader{})
@@ -194,9 +194,9 @@ func testDefault() {
 func testList() {
 	var err error
 
-	sm := (&smn_analysis.StateMachine{}).Init()
-	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
-	dftSNR.Register(smn_analysis.NewStateNodeListReader(&Type1NodeReader{}, &Type2NodeReader{}, &Type3NodeReader{}))
+	sm := (&snreader.StateMachine{}).Init()
+	dftSNR := snreader.NewDftStateNodeReader(sm)
+	dftSNR.Register(snreader.NewStateNodeListReader(&Type1NodeReader{}, &Type2NodeReader{}, &Type3NodeReader{}))
 
 	read := func(cs string) {
 		for _, c := range cs {
@@ -229,9 +229,9 @@ func testList() {
 func testSelect() {
 	var err error
 
-	sm := (&smn_analysis.StateMachine{}).Init()
-	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
-	dftSNR.Register(smn_analysis.NewStateNodeSelectReader(&Type1NodeReader{}, &Type2NodeReader{}, &Type3NodeReader{}))
+	sm := (&snreader.StateMachine{}).Init()
+	dftSNR := snreader.NewDftStateNodeReader(sm)
+	dftSNR.Register(snreader.NewStateNodeSelectReader(&Type1NodeReader{}, &Type2NodeReader{}, &Type3NodeReader{}))
 
 	read := func(cs string) {
 		for _, c := range cs {

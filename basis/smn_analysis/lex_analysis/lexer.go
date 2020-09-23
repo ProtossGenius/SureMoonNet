@@ -1,6 +1,6 @@
 package lex_analysis
 
-import "github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
+import "github.com/ProtossGenius/pglang/snreader"
 
 type LexType int
 
@@ -9,12 +9,12 @@ const (
 )
 
 type LexerInput struct {
-	smn_analysis.InputItf
+	snreader.InputItf
 	C rune
 }
 
 type LexicalUnit struct {
-	smn_analysis.ProductItf
+	snreader.ProductItf
 	Type  LexType
 	Value string
 }

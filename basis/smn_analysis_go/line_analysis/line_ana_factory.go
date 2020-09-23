@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
+	"github.com/ProtossGenius/pglang/snreader"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis_go/smn_anlys_go_tif"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_str"
@@ -12,11 +12,11 @@ import (
 
 // only for easy analysis.
 type LineInput struct {
-	smn_analysis.InputItf
+	snreader.InputItf
 	Input string
 }
 
-func (this *LineInput) Copy() smn_analysis.InputItf {
+func (this *LineInput) Copy() snreader.InputItf {
 	return &LineInput{Input: this.Input}
 }
 
@@ -26,9 +26,9 @@ const (
 	ProductType_Pkg
 )
 
-func NewGoAnalysis() *smn_analysis.StateMachine {
-	sm := (&smn_analysis.StateMachine{}).Init()
-	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
+func NewGoAnalysis() *snreader.StateMachine {
+	sm := (&snreader.StateMachine{}).Init()
+	dftSNR := snreader.NewDftStateNodeReader(sm)
 	dftSNR.Register(&GoStructNodeReader{})
 	dftSNR.Register(&GoItfNodeReader{})
 	dftSNR.Register(&GoPkgNodeReader{})
@@ -36,12 +36,12 @@ func NewGoAnalysis() *smn_analysis.StateMachine {
 }
 
 //
-//func AnalysisFile(path string) ([]smn_analysis.ProductItf, error) {
+//func AnalysisFile(path string) ([]snreader.ProductItf, error) {
 //
 //}
 
 type GoStruct struct {
-	smn_analysis.ProductItf
+	snreader.ProductItf
 	Result *smn_pglang.StructDef
 }
 
@@ -50,7 +50,7 @@ func (*GoStruct) ProductType() int {
 }
 
 type GoItf struct {
-	smn_analysis.ProductItf
+	snreader.ProductItf
 	Result *smn_pglang.ItfDef
 }
 
@@ -59,7 +59,7 @@ func (*GoItf) ProductType() int {
 }
 
 type GoPkg struct {
-	smn_analysis.ProductItf
+	snreader.ProductItf
 	Pkg string
 }
 
@@ -97,7 +97,7 @@ func (this *GoStructNodeReader) Name() string {
 	return "GoStructNodeReader"
 }
 
-func (this *GoStructNodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *GoStructNodeReader) PreRead(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	in := input.(*LineInput)
 	in.Input = strings.Replace(strings.TrimSpace(in.Input), "{", "", -1)
 	if in.Input == "" {
@@ -111,7 +111,7 @@ func (this *GoStructNodeReader) PreRead(stateNode *smn_analysis.StateNode, input
 	return false, nil
 }
 
-func (this *GoStructNodeReader) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *GoStructNodeReader) Read(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	in := input.(*LineInput)
 	in.Input = strings.Replace(strings.TrimSpace(in.Input), "{", "", -1)
 	if in.Input == "" {
@@ -152,11 +152,11 @@ func (this *GoStructNodeReader) Read(stateNode *smn_analysis.StateNode, input sm
 	return true, fmt.Errorf(ErrStructUnknowInput, in.Input)
 }
 
-func (this *GoStructNodeReader) End(stateNode *smn_analysis.StateNode) (isEnd bool, err error) {
+func (this *GoStructNodeReader) End(stateNode *snreader.StateNode) (isEnd bool, err error) {
 	return true, fmt.Errorf(ErrStructUnknowInput, "EOF")
 }
 
-func (this *GoStructNodeReader) GetProduct() smn_analysis.ProductItf {
+func (this *GoStructNodeReader) GetProduct() snreader.ProductItf {
 	return this.Result
 }
 
@@ -176,7 +176,7 @@ func (this *GoItfNodeReader) Name() string {
 	return "GoItfNodeReader"
 }
 
-func (this *GoItfNodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *GoItfNodeReader) PreRead(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	in := input.(*LineInput)
 	in.Input = smn_str.DropLineComment(in.Input)
 	in.Input = strings.Replace(in.Input, "{", "", -1)
@@ -191,7 +191,7 @@ func (this *GoItfNodeReader) PreRead(stateNode *smn_analysis.StateNode, input sm
 	return false, nil
 }
 
-func (this *GoItfNodeReader) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *GoItfNodeReader) Read(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	in := input.(*LineInput)
 	in.Input = smn_str.DropLineComment(in.Input)
 	in.Input = strings.Replace(in.Input, "{", "", -1)
@@ -235,11 +235,11 @@ func (this *GoItfNodeReader) Read(stateNode *smn_analysis.StateNode, input smn_a
 	}
 }
 
-func (this *GoItfNodeReader) End(stateNode *smn_analysis.StateNode) (bool, error) {
+func (this *GoItfNodeReader) End(stateNode *snreader.StateNode) (bool, error) {
 	return true, fmt.Errorf(ErrItfEOF)
 }
 
-func (this *GoItfNodeReader) GetProduct() smn_analysis.ProductItf {
+func (this *GoItfNodeReader) GetProduct() snreader.ProductItf {
 	return this.Result
 }
 
@@ -256,11 +256,11 @@ type GoPkgNodeReader struct {
 func (this *GoPkgNodeReader) Name() string {
 	return "GoPkgNodeReader"
 }
-func (this *GoPkgNodeReader) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *GoPkgNodeReader) PreRead(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	return false, nil
 }
 
-func (this *GoPkgNodeReader) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *GoPkgNodeReader) Read(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	in := input.(*LineInput)
 	in.Input = smn_str.DropLineComment(in.Input)
 	in.Input = strings.Replace(in.Input, "{", "", -1)
@@ -276,11 +276,11 @@ func (this *GoPkgNodeReader) Read(stateNode *smn_analysis.StateNode, input smn_a
 	return true, fmt.Errorf(ErrNotPkgDef)
 }
 
-func (this *GoPkgNodeReader) End(stateNode *smn_analysis.StateNode) (bool, error) {
+func (this *GoPkgNodeReader) End(stateNode *snreader.StateNode) (bool, error) {
 	return true, fmt.Errorf(ErrNotPkgDef)
 }
 
-func (this *GoPkgNodeReader) GetProduct() smn_analysis.ProductItf {
+func (this *GoPkgNodeReader) GetProduct() snreader.ProductItf {
 	return this.Result
 }
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
+	"github.com/ProtossGenius/pglang/snreader"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_pglang"
 )
 
@@ -20,7 +20,7 @@ const (
 )
 
 type LangInput struct {
-	smn_analysis.InputItf
+	snreader.InputItf
 	Word string
 	Type int
 }
@@ -47,11 +47,11 @@ func (this *StructReadNode) Name() string {
 	return "StructReadNode"
 }
 
-func (this *StructReadNode) GetProduct() smn_analysis.ProductItf {
+func (this *StructReadNode) GetProduct() snreader.ProductItf {
 	return this.Result
 }
 
-func (this *StructReadNode) PreRead(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *StructReadNode) PreRead(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	rInp := input.(*LangInput)
 	if rInp.Word == "struct" && !this.waitStructName {
 		return true, nil
@@ -59,7 +59,7 @@ func (this *StructReadNode) PreRead(stateNode *smn_analysis.StateNode, input smn
 	return false, nil
 }
 
-func (this *StructReadNode) Read(stateNode *smn_analysis.StateNode, input smn_analysis.InputItf) (isEnd bool, err error) {
+func (this *StructReadNode) Read(stateNode *snreader.StateNode, input snreader.InputItf) (isEnd bool, err error) {
 	rInp := input.(*LangInput)
 	result := this.Result.Result
 	if rInp.Word == "struct" {
@@ -98,9 +98,9 @@ func (this *StructReadNode) Clean() {
 	this.Result = NewResultStruct()
 }
 
-func GetStructStateMachine() *smn_analysis.StateMachine {
-	sm := (&smn_analysis.StateMachine{}).Init()
-	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
+func GetStructStateMachine() *snreader.StateMachine {
+	sm := (&snreader.StateMachine{}).Init()
+	dftSNR := snreader.NewDftStateNodeReader(sm)
 	dftSNR.Register(&StructReadNode{})
 	return sm
 }
