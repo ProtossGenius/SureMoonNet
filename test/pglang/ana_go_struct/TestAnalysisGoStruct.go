@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis"
+	"github.com/ProtossGenius/pglang/snreader"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis_go/line_analysis"
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_data"
 	"fmt"
@@ -10,16 +10,16 @@ import (
 )
 
 func main() {
-	sm := (&smn_analysis.StateMachine{}).Init()
-	dftSNR := smn_analysis.NewDftStateNodeReader(sm)
+	sm := (&snreader.StateMachine{}).Init()
+	dftSNR := snreader.NewDftStateNodeReader(sm)
 	dftSNR.Register(&line_analysis.GoStructNodeReader{})
 	str := `
 type Input struct {
-	smn_analysis.InputItf
+	snreader.InputItf
 	Input rune
 }
 type Output struct {
-	smn_analysis.ProductItf
+	snreader.ProductItf
 	Result int
 }
 `
