@@ -359,10 +359,11 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 		gof.Import(SmnBase)
 		{ //  rpc struct
 			b := gof.AddBlock("type CltRpc%s struct", itf.Name)
-			b.WriteLine("conn smn_rpc.MessageAdapterItf")
-			b.WriteLine("onMsg chan func(*smn_base.Ret)")
-			b.WriteLine("lock sync.Mutex")
-			b.WriteLine("OnErr smn_err.OnErr")
+			b.WriteLine("conn     smn_rpc.MessageAdapterItf")
+			b.WriteLine("onMsg    chan func(*smn_base.Ret)")
+			b.WriteLine("sendChan chan proto.Message")
+			b.WriteLine("lock     sync.Mutex")
+			b.WriteLine("OnErr    smn_err.OnErr")
 			b.Imports(module + "/pb/smn_dict")
 			b.Imports(SmnRPC)
 			b.Imports("sync")
@@ -371,19 +372,32 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 		{ //  new func
 			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf, cacheSize int) *CltRpc%s", itf.Name, itf.Name)
 			b.Imports(SmnRPC)
-			b.WriteLine(`res := &CltRpc%s{conn:conn, onMsg:make(chan func(*smn_base.Ret), cacheSize), OnErr: smn_err.DftOnErr}
-	go func(){
-		for{
+			b.WriteLine(`res := &CltRpc%s{conn:conn, onMsg:make(chan func(*smn_base.Ret), cacheSize), 
+	sendChan: make(chan proto.Message, cacheSize), OnErr: smn_err.DftOnErr}
+	go func() {
+		for {
 				rcvMsg, err := res.conn.ReadRet()
 				if err != nil{
 					res.OnErr(err)
 				}
+
 				f := <-res.onMsg
+
 				go f(rcvMsg)
 			}
-
-		}()`, itf.Name)
-
+		}()
+		`, itf.Name)
+			b.WriteLine(`
+	go func() {
+		for {
+			_bcall := <-res.sendChan
+			_bts, _err := proto.Marshal(_bcall)
+			res.OnErr(_err)
+			_, _err = smn_net.WriteBytes(_bts, res.conn.GetConn())
+			res.OnErr(_err)
+		}
+	}()
+`)
 			b.WriteLine("return res")
 		}
 	}, func(f *smn_pglang.FuncDef, gof *code_file_build.CodeFile, tryImport func(string)) error {
@@ -414,12 +428,10 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 		b.WriteLine("this.OnErr(_err)\n")
 		b.WriteLine("_bcall := &smn_base.Call{Dict:int32(smn_dict.EDict_rip_%s_%s_%s_Prm), Msg:_bts}",
 			itf.Package, itf.Name, f.Name)
-		b.WriteLine("_bts, _err = proto.Marshal(_bcall)")
 		b.WriteLine("this.OnErr(_err)\n")
 		b.WriteLine("this.lock.Lock()")
 		b.WriteLine("defer this.lock.Unlock()")
-		b.WriteLine("_, _err = smn_net.WriteBytes(_bts, this.conn.GetConn())")
-		b.WriteLine("this.OnErr(_err)")
+		b.WriteLine("this.sendChan <- _bcall")
 		b.WriteLine("this.onMsg <- __onMsg")
 
 		return nil
