@@ -14,6 +14,18 @@ func iserr(err error) bool {
 
 type ConnFunc func(conn net.Conn)
 
+// StructCall  MessageAdapterItf's Param .
+type StructCall struct {
+	Dict int32
+	Msg  proto.Message
+}
+
+// StructResult result .
+type StructResult struct {
+	Callback func(*smn_base.Ret)
+	Ret      *smn_base.Ret
+}
+
 type RpcSvrItf interface {
 	//@ret d -> dict, _p proto.Message, _e error
 	OnMessage(c *smn_base.Call, conn net.Conn) (_d int32, _p proto.Message, _e error)
