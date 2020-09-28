@@ -47,7 +47,7 @@ clean:
 	rm -rf ./pb/smn_dict
 	rm -rf datas/proto/temp
 	
-test: clean itf2proto proto_compile itf2rpc
+test: install clean itf2proto proto_compile itf2rpc
 	go run ./test/smn_net_rpc/test.go
 	go run ./test/smn_net/muti_service/ms.go
 

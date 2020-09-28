@@ -24,6 +24,9 @@ const (
 	SmnConnFunc = "smn_rpc.ConnFunc"
 )
 
+// GoAsynClientRoutines how many routines to deal with result.
+var GoAsynClientRoutines = 10
+
 // ErrAsynClientHaveConn .
 var ErrAsynClientHaveConn = errors.New("AsynClint not support user-def conn")
 
@@ -360,40 +363,49 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 		{ //  rpc struct
 			b := gof.AddBlock("type CltRpc%s struct", itf.Name)
 			b.WriteLine("conn     smn_rpc.MessageAdapterItf")
+			b.WriteLine("cbChan   chan *smn_rpc.StructResult")
 			b.WriteLine("onMsg    chan func(*smn_base.Ret)")
-			b.WriteLine("sendChan chan proto.Message")
+			b.WriteLine("sendChan chan *smn_rpc.StructCall")
 			b.WriteLine("lock     sync.Mutex")
 			b.WriteLine("OnErr    smn_err.OnErr")
 			b.Imports(module + "/pb/smn_dict")
 			b.Imports(SmnRPC)
 			b.Imports("sync")
 			b.Imports("github.com/ProtossGenius/SureMoonNet/basis/smn_err")
+			b.Imports("github.com/ProtossGenius/SureMoonNet/smn/proto_tool/itf2rpc")
 		}
 		{ //  new func
 			b := gof.AddBlock("func NewCltRpc%s(conn smn_rpc.MessageAdapterItf, cacheSize int) *CltRpc%s", itf.Name, itf.Name)
 			b.Imports(SmnRPC)
-			b.WriteLine(`res := &CltRpc%s{conn:conn, onMsg:make(chan func(*smn_base.Ret), cacheSize), 
-	sendChan: make(chan proto.Message, cacheSize), OnErr: smn_err.DftOnErr}
+			b.WriteLine(`res := &CltRpc%s{conn:conn, onMsg:make(chan func(*smn_base.Ret), cacheSize), cbChan: make(chan *smn_rpc.StructResult, cacheSize),
+	sendChan: make(chan *smn_rpc.StructCall, cacheSize), OnErr: smn_err.DftOnErr}
+
 	go func() {
 		for {
-				rcvMsg, err := res.conn.ReadRet()
-				if err != nil{
-					res.OnErr(err)
-				}
+			rcvMsg, err := res.conn.ReadRet()
+			if err != nil{
+				res.OnErr(err)
+			}
 
-				f := <-res.onMsg
-
-				go f(rcvMsg)
+			f := <-res.onMsg
+			res.cbChan <- &smn_rpc.StructResult{Callback:f, Ret:rcvMsg}
+		}
+	}()`, itf.Name)
+			b.WriteLine(`
+	for i := 0; i < itf2rpc.GoAsynClientRoutines; i++{
+		go func(){
+			for {
+				result := <- res.cbChan
+				result.Callback(result.Ret)
 			}
 		}()
-		`, itf.Name)
+	}
+`)
 			b.WriteLine(`
 	go func() {
 		for {
-			_bcall := <-res.sendChan
-			_bts, _err := proto.Marshal(_bcall)
-			res.OnErr(_err)
-			_, _err = smn_net.WriteBytes(_bts, res.conn.GetConn())
+			scall := <-res.sendChan
+			_, _err := res.conn.WriteCall(scall.Dict, scall.Msg)
 			res.OnErr(_err)
 		}
 	}()
@@ -407,8 +419,7 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 			return ErrAsynClientHaveConn
 		}
 
-		b := gof.AddBlock("func (this *CltRpc%s)%s(%s, __sm_callback func(%s))", itf.Name, f.Name, prmList, retDefList)
-		gof.Import("github.com/ProtossGenius/SureMoonNet/basis/smn_net")
+		b := gof.AddBlock("\nfunc (this *CltRpc%s)%s(%s, __sm_callback func(%s))", itf.Name, f.Name, prmList, retDefList)
 		b.WriteLine(`__onMsg := func(_rm *smn_base.Ret){
 	if _rm.Err{
 		this.OnErr(errors.New(string(_rm.Msg)))
@@ -416,22 +427,20 @@ func GoAsynClient(path, module, itfFullPkg string, itf *smn_pglang.ItfDef) error
 
 	_res := &rip_%s.%s_%s_Ret{}
 	_err := proto.Unmarshal(_rm.Msg, _res)
+
 	if _err != nil{
 		this.OnErr(_err)
 	}
+
 	__sm_callback(%s)
 }`, itf.Package, itf.Name, f.Name, rpcRes)
 		gof.Import("errors")
 		gof.Import("google.golang.org/protobuf/proto")
 		b.WriteLine("_msg := &rip_%s.%s_%s_Prm{%s}", itf.Package, itf.Name, f.Name, rpcPrms)
-		b.WriteLine("_bts, _err := proto.Marshal(_msg)")
-		b.WriteLine("this.OnErr(_err)\n")
-		b.WriteLine("_bcall := &smn_base.Call{Dict:int32(smn_dict.EDict_rip_%s_%s_%s_Prm), Msg:_bts}",
-			itf.Package, itf.Name, f.Name)
-		b.WriteLine("this.OnErr(_err)\n")
-		b.WriteLine("this.lock.Lock()")
+		b.WriteLine("\nthis.lock.Lock()")
 		b.WriteLine("defer this.lock.Unlock()")
-		b.WriteLine("this.sendChan <- _bcall")
+		b.WriteLine("this.sendChan <- &smn_rpc.StructCall{Dict:int32(smn_dict.EDict_rip_%s_%s_%s_Prm),Msg:_msg}",
+			itf.Package, itf.Name, f.Name)
 		b.WriteLine("this.onMsg <- __onMsg")
 
 		return nil
