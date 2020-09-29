@@ -2,7 +2,6 @@ package smn_flag
 
 import (
 	"flag"
-	"fmt"
 	"strings"
 
 	"github.com/ProtossGenius/SureMoonNet/basis/smn_err"
@@ -123,15 +122,12 @@ func (this *smnFlag) Parse(args []string, ed *smn_err.ErrDeal) {
 
 	this.Args = newArgs
 
-	for name, valReg := range this.SFValRegMap {
+	for _, valReg := range this.SFValRegMap {
 		if valReg.Func == nil || valReg.GetValue() == "" {
 			continue
 		}
 
-		fmt.Println("dealing funcs .... ", name)
-
 		err := valReg.Func(valReg.GetValue())
 		ed.OnErr(err)
-		fmt.Println("deal func ", name, " finish.")
 	}
 }
