@@ -22,7 +22,7 @@ func (v *Version) Less(rhs *Version) bool {
 
 // ToString  v to string.
 func (v *Version) ToString() string {
-	return fmt.Sprintf("%d.%d.%d.%d", v.FirstNo, v.SecondNo, v.ThridNo, v.FirstNo)
+	return fmt.Sprintf("%d.%d.%d.%d", v.FirstNo, v.SecondNo, v.ThridNo, v.ForthNo)
 }
 
 func toint(num string) int {
