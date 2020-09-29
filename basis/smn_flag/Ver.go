@@ -16,8 +16,22 @@ type Version struct {
 
 // Less .
 func (v *Version) Less(rhs *Version) bool {
-	return !(v.FirstNo >= rhs.FirstNo || v.SecondNo >= rhs.SecondNo ||
-		v.ThridNo >= rhs.ThridNo || v.ForthNo >= rhs.ForthNo)
+	if v.FirstNo != rhs.FirstNo {
+		return v.FirstNo < rhs.FirstNo
+	}
+	if v.SecondNo != rhs.SecondNo {
+		return v.SecondNo < rhs.SecondNo
+	}
+	if v.ThridNo != rhs.ThridNo {
+		return v.ThridNo < rhs.ThridNo
+	}
+
+	return v.ForthNo < rhs.ForthNo
+}
+
+// NewVersion create a Version.
+func NewVersion(v1, v2, v3, v4 int) *Version {
+	return &Version{v1, v2, v3, v4}
 }
 
 // ToString  v to string.
