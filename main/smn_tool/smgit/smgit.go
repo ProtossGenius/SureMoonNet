@@ -64,7 +64,6 @@ func ffPush() {
 	if Comment == "" {
 		panic(fmt.Errorf("no comment message"))
 	}
-	ffPull()
 	//make install
 	fmt.Println("make install")
 	ec("make", "install")
@@ -77,6 +76,7 @@ func ffPush() {
 	//git add .
 	fmt.Println("git add -A")
 	ec("git", "add", "-A")
+	ffPull()
 	//git commit -m
 	fmt.Println("git commit -m ", fmt.Sprintf(`"%s"`, Comment))
 	ec("git", "commit", "-m", fmt.Sprintf(`"%s"`, Comment))
