@@ -25,7 +25,6 @@ github.com/ProtossGenius/kcptun v0.0.0-20200520050201-243ffb25e979 h1:tF+OGhqS4E
 github.com/ProtossGenius/pglang v0.0.0-20200717110701-36e48cc808c8/go.mod h1:lfe8umNoPd1yrGfKNOGicauiXZHKqIzXGD0Ol23kGHM=
 github.com/ProtossGenius/pglang v0.0.0-20200808150637-5881d210e079 h1:a3iHZU7BfMygG0uWjn8yz6zrhPcqYc8RR1VN7vgiUfg=
 github.com/ProtossGenius/pglang v0.0.0-20200808150637-5881d210e079/go.mod h1:UMxUA4xIUoRUc3ig5iWm3gcpbjcvUAAnyHTJSVyWWFg=
-github.com/ProtossGenius/smn-cpp v0.0.0-20200605081320-4de0f87e059d h1:ATu0svW/+v7xPEFhm3cxKrl628IVY+dHg6TYpLjhgpM=
 github.com/ProtossGenius/smn-cpp v0.0.0-20200605081320-4de0f87e059d/go.mod h1:LoCLyGaS0GC9cOD5dcBV1ULkRHF5txwVUg4eepcxgeg=
 github.com/ProtossGenius/smn-cpp v0.0.0-20200805043758-9668faa4fe3f/go.mod h1:LoCLyGaS0GC9cOD5dcBV1ULkRHF5txwVUg4eepcxgeg=
 github.com/ProtossGenius/smntools v0.0.0-20200429134454-fd4e50a138cc h1:d+8+fuR8lgshnQqeQxO7WhmN8DnlHzSpCAAF3bkvXZ0=
