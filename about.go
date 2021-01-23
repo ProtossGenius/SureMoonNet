@@ -29,9 +29,9 @@ func main() {
 		f, err := smn_file.CreateNewFile(path)
 		check(err)
 		defer f.Close()
-		str := strings.ReplaceAll(string(data), "\"github.com/ProtossGenius/SureMoonNet/basis/smn_analysis\"",
-			`"github.com/ProtossGenius/pglang/snreader"`)
-		str = strings.ReplaceAll(str, "smn_analysis.", "snreader.")
+		str := strings.ReplaceAll(string(data), "\"github.com/ProtossGenius/smnric/",
+			`"github.com/ProtossGenius/smnric/`)
+		str = strings.ReplaceAll(str, "snreader.", "snreader.")
 		_, err = f.WriteString(str)
 		check(err)
 
