@@ -68,15 +68,15 @@ func RemoveDirctory(path string) error {
 				return err
 			}
 		}
-
 	}
+
 	return os.Remove(path)
 }
 
 // MakeSureDirExist if dir not exist, create it.
 func MakeSureDirExist(path string) error {
 	if !IsFileExist(path) {
-		return os.Mkdir(path, os.ModeDir)
+		return os.MkdirAll(path, os.ModeDir)
 	}
 
 	return nil
