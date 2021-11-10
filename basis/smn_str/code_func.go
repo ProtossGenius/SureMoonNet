@@ -26,25 +26,34 @@ func InitialsUpper(str string) string {
 	return strings.ToUpper(str[:1]) + str[1:]
 }
 
+// PkgUpper from and_bnana to AndBnana.
 func PkgUpper(pkg string) string {
 	list := strings.Split(pkg, "_")
 	for i := range list {
 		list[i] = InitialsUpper(list[i])
 	}
+
 	return strings.Join(list, "_")
 }
 
-//drop `[]`, `*` and let int as int64(proto not have int)
+// ProtoUseDeal drop `[]`, `*` and let int as int64(proto not have int).
 func ProtoUseDeal(typ string) (isArray bool, nt string) {
+	if typ == "[]byte" {
+		typ = "bytes"
+	}
+
 	isArray = strings.Contains(typ, "[]")
-	typ = strings.Replace(typ, "[]", "", -1)
-	typ = strings.Replace(typ, "*", "", -1)
+	typ = strings.ReplaceAll(typ, "[]", "")
+	typ = strings.ReplaceAll(typ, "*", "")
 	nt = strings.TrimSpace(typ)
+
 	if nt == "int" {
 		nt = "int64"
 	}
+
 	if nt == "uint" {
 		nt = "uint64"
 	}
+
 	return
 }
