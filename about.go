@@ -15,7 +15,7 @@ func check(err error) {
 }
 
 func main() {
-	_, err := smn_file.DeepTraversalDir("./", func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
+	_, err := smn_file.DeepTraversalDirWithSelf("./", func(path string, info os.FileInfo) smn_file.FileDoFuncResult {
 		if info.IsDir() {
 			return smn_file.FILE_DO_FUNC_RESULT_DEFAULT
 		}

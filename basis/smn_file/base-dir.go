@@ -52,6 +52,19 @@ func DeepTraversalDir(path string,
 	return
 }
 
+// DeepTraversalDirWithSelf .
+func DeepTraversalDirWithSelf(path string, fileDo func(path string, info os.FileInfo) FileDoFuncResult) (info os.FileInfo, err error) {
+	if self, err := os.Stat(path); err == nil {
+		if fileDo(path, self) != FILE_DO_FUNC_RESULT_DEFAULT {
+			return self, nil
+		}
+	} else {
+		return self, err
+	}
+
+	return DeepTraversalDir(path, fileDo)
+}
+
 // ListDirs ..
 func ListDirs(path string, dirDo func(dPath string)) (err error) {
 	dirs, err := ioutil.ReadDir(path)
